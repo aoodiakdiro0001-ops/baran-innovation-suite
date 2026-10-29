@@ -1,0 +1,19 @@
+# ============================================================
+# Pixel-ZeroBaran | Python Dependencies
+# ============================================================
+# للتشغيل المحلي:
+#   pip install -r scanner/pixel/requirements.txt
+#
+# ملاحظة: GitHub Actions يثبّتها تلقائياً في الـ workflow.
+
+# عزل الخلفية والمعالجة الأساسية
+rembg>=2.0.50
+Pillow>=10.0.0
+onnxruntime>=1.16.0
+numpy>=1.24.0
+
+# معالجة الصور المتقدمة (optional لكن موصى به)
+opencv-python-headless>=4.8.0
+
+# ملاحظة: Hugging Face و Gemini و Supabase و Telegram
+# كلها تُستدعى عبر urllib فقط (Python stdlib) دون SDK إضافي.

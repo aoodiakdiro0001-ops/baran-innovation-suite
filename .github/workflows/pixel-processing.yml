@@ -1,0 +1,185 @@
+# ============================================================
+# Pixel-ZeroBaran | GitHub Actions Workflow
+# معالجة الصور الآلية — يُطلق يدوياً أو عبر push لصور جديدة
+# ============================================================
+name: "🎨 Pixel-ZeroBaran Image Processing"
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_url:
+        description: "رابط الصورة (URL) — أو اتركه فارغاً لمعالجة مجلد products/"
+        required: false
+        default: ""
+      process_type:
+        description: "نوع المعالجة"
+        type: choice
+        options:
+          - full
+          - rembg
+          - composite
+          - relight
+        default: full
+      background_style:
+        description: "نمط الخلفية"
+        type: choice
+        options:
+          - studio
+          - studio_neon
+          - lifestyle_wood
+          - lifestyle_office
+          - lifestyle_urban_night
+          - nature_beach
+          - nature_forest
+          - industrial_metal
+          - minimal_white
+          - minimal_gradient
+        default: studio
+      deliver_to_telegram:
+        description: "إرسال النتيجة إلى تليجرام"
+        type: boolean
+        default: true
+      archive_to_supabase:
+        description: "أرشفة النتيجة في Supabase Storage"
+        type: boolean
+        default: true
+
+  # تشغيل تلقائي عند رفع صور في مجلد products/
+  push:
+    paths:
+      - "products/**"
+      - "scanner/pixel/**"
+
+env:
+  HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  PIXEL_TELEGRAM_BOT_TOKEN: ${{ secrets.PIXEL_TELEGRAM_BOT_TOKEN }}
+  PIXEL_TELEGRAM_CHAT_ID: ${{ secrets.PIXEL_TELEGRAM_CHAT_ID }}
+  PIXEL_SUPABASE_URL: ${{ secrets.PIXEL_SUPABASE_URL }}
+  PIXEL_SUPABASE_ANON_KEY: ${{ secrets.PIXEL_SUPABASE_ANON_KEY }}
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # ============================================================
+      # 1. Checkout
+      # ============================================================
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      # ============================================================
+      # 2. Python + Dependencies
+      # ============================================================
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "📦 Install Python Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scanner/pixel/requirements.txt
+
+      # ============================================================
+      # 3. تحضير مجلد العمل
+      # ============================================================
+      - name: "📁 Setup Workspace"
+        run: |
+          mkdir -p uploads results nobg
+          echo "workspace_ready=true" >> $GITHUB_ENV
+
+      # ============================================================
+      # 4. تحميل الصورة (إذا URL مُدخل) أو استخدام مجلد products/
+      # ============================================================
+      - name: "🌐 Download Image (if URL provided)"
+        if: github.event.inputs.image_url != ''
+        run: |
+          curl -sSL -o uploads/source.jpg "${{ github.event.inputs.image_url }}"
+          ls -la uploads/
+        continue-on-error: true
+
+      - name: "📂 Use Uploaded Image"
+        if: github.event.inputs.image_url == ''
+        run: |
+          if [ -d "products" ] && [ -n "$(ls -A products 2>/dev/null)" ]; then
+            cp products/* uploads/ 2>/dev/null || true
+          else
+            echo "⚠️ لا توجد صور في products/ ولا URL مُدخل"
+            echo "source_image=none" >> $GITHUB_ENV
+          fi
+          ls -la uploads/ || echo "uploads empty"
+
+      # ============================================================
+      # 5. معالجة الصور
+      # ============================================================
+      - name: "🎨 Process Images (rembg + AI composite)"
+        if: env.source_image != 'none'
+        run: |
+          if [ -n "$(ls uploads/ 2>/dev/null)" ]; then
+            python scanner/pixel/batch_processor.py \
+              --folder=uploads/ \
+              --output=results/ \
+              --process=${{ github.event.inputs.process_type || 'full' }} \
+              --style=${{ github.event.inputs.background_style || 'studio' }}
+          else
+            echo "⚠️ لا توجد صور للمعالجة"
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 6. أرشفة في Supabase Storage
+      # ============================================================
+      - name: "💾 Archive to Supabase Storage"
+        if: github.event.inputs.archive_to_supabase == 'true' && env.PIXEL_SUPABASE_URL != '' && env.PIXEL_SUPABASE_ANON_KEY != ''
+        run: |
+          for f in results/*.png; do
+            if [ -f "$f" ]; then
+              python scanner/pixel/supabase_storage.py --upload="$f" --bucket=pixel-results
+            fi
+          done
+        continue-on-error: true
+
+      # ============================================================
+      # 7. إرسال النتائج إلى Telegram
+      # ============================================================
+      - name: "📨 Deliver to Telegram"
+        if: github.event.inputs.deliver_to_telegram == 'true' && env.PIXEL_TELEGRAM_BOT_TOKEN != '' && env.PIXEL_TELEGRAM_CHAT_ID != ''
+        run: |
+          for f in results/*.png; do
+            if [ -f "$f" ]; then
+              python scanner/pixel/telegram_delivery.py \
+                --image="$f" \
+                --caption="🎨 نتيجة معالجة Pixel-ZeroBaran — $(basename $f)"
+            fi
+          done
+        continue-on-error: true
+
+      # ============================================================
+      # 8. Upload Artifacts
+      # ============================================================
+      - name: "📤 Upload Processed Images"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pixel-results-${{ github.run_id }}
+          path: results/
+          retention-days: 30
+
+      # ============================================================
+      # 9. ملخص
+      # ============================================================
+      - name: "✅ Summary"
+        if: always()
+        run: |
+          echo "### 🎨 Pixel-ZeroBaran — معالجة الصور" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**نوع المعالجة:** \`${{ github.event.inputs.process_type || 'full' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**نمط الخلفية:** \`${{ github.event.inputs.background_style || 'studio' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**النتائج:**" >> $GITHUB_STEP_SUMMARY
+          if [ -d "results" ]; then
+            find results -name "*.png" -exec echo "  - \`{}\`" \; >> $GITHUB_STEP_SUMMARY || true
+          fi

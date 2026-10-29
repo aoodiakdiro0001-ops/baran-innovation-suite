@@ -15,11 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cyber-SentinelBaran | منظومة الفحص الأمني الذكية",
+  title: "Baran Innovation Suite | Cyber-SentinelBaran + Pixel-ZeroBaran",
   description:
-    "نظام ذكي متكامل لاختبار الاختراق الآلي، فحص الويب ومنافذ الشبكات، واكتشاف الثغرات الأمنية في التطبيقات والمواقع باستخدام أدوات مفتوحة المصدر مجانية بالكامل.",
+    "منصة تجمع مشروعين مبتكرين بُنيا بموارد مجانية بالكامل: Cyber-SentinelBaran (الفحص الأمني واختبار الاختراق) و Pixel-ZeroBaran (استوديو تعديل ومعالجة الصور).",
   keywords: [
     "Cyber-SentinelBaran",
+    "Pixel-ZeroBaran",
+    "Baran Innovation Suite",
     "اختبار الاختراق",
     "الفحص الأمني",
     "OWASP Top 10",
@@ -30,9 +32,14 @@ export const metadata: Metadata = {
     "Supabase",
     "Telegram Bot",
     "GitHub Actions",
+    "rembg",
+    "Hugging Face",
+    "إزالة الخلفية",
+    "إعادة الإضاءة",
+    "توليد تسويقي",
     "حماية الذاتية اللامركزية",
   ],
-  authors: [{ name: "Cyber-SentinelBaran Team" }],
+  authors: [{ name: "Baran Avisat" }],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },

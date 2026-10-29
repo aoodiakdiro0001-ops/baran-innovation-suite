@@ -97,3 +97,66 @@ model AlertLog {
   @@index([channel])
   @@index([sentAt])
 }
+
+// ============================================================
+// Pixel-ZeroBaran | استوديو تعديل ومعالجة الصور
+// منظومة تعديل الصور، إزالة الخلفيات، إعادة الإضاءة، والتوليد التسويقي
+// ============================================================
+
+// جدول مهام معالجة الصور
+model ImageJob {
+  id              String   @id @default(cuid())
+  source          String   // telegram | web | api | github
+  originalUrl     String   // رابط الصورة الأصلية
+  thumbnailUrl    String?
+  fileName        String
+  fileSize        Int      // bytes
+  width           Int?
+  height          Int?
+  processType     String   // rembg | relight | composite | full
+  backgroundStyle String?  // studio | beach | wood | office | custom
+  status          String   @default("pending") // pending | processing | completed | failed
+  startedAt       DateTime @default(now())
+  finishedAt      DateTime?
+  processingTimeMs Int?
+  resultUrl       String?  // رابط الصورة النهائية
+  resultSize      Int?
+  errorMessage    String?
+  triggeredBy     String   @default("manual") // manual | cron | api
+  costSavedUsd    Float    @default(0.0) // التقدير الادخاري مقارنة باستوديو حقيقي
+  createdAt       DateTime @default(now())
+
+  @@index([status])
+  @@index([processType])
+  @@index([startedAt])
+  @@index([source])
+}
+
+// جدول قوالب الخلفيات التسويقية
+model BackgroundTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // studio | lifestyle | nature | industrial | minimal
+  prompt      String   // prompt للذكاء الاصطناعي
+  previewUrl  String?
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+}
+
+// جدول إحصائيات يومية للأداء
+model PixelDailyStat {
+  id              String   @id @default(cuid())
+  date            String   // YYYY-MM-DD
+  totalJobs       Int      @default(0)
+  completedJobs   Int      @default(0)
+  failedJobs      Int      @default(0)
+  totalImagesProcessed Int @default(0)
+  totalBytesSaved Int      @default(0)
+  totalCostSavedUsd Float @default(0.0)
+  avgProcessingMs Int      @default(0)
+
+  @@unique([date])
+  @@index([date])
+}

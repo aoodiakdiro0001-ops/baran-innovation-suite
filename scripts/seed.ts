@@ -13,6 +13,9 @@ async function seed() {
   await db.vulnerability.deleteMany();
   await db.scan.deleteMany();
   await db.setting.deleteMany();
+  await db.imageJob.deleteMany();
+  await db.backgroundTemplate.deleteMany();
+  await db.pixelDailyStat.deleteMany();
 
   // إنشاء الفحوصات
   const scans = await Promise.all(
@@ -493,6 +496,289 @@ async function seed() {
   console.log("[SEED] التقارير: 2");
   console.log("[SEED] التنبيهات: 5");
   console.log("[SEED] الإعدادات: 22 (مفاتيح فارغة + معلومات المالك العامة)");
+
+  // ============================================================
+  // Pixel-ZeroBaran — بيانات تجريبية لاستوديو الصور
+  // ============================================================
+  console.log("[SEED] بدء زرع بيانات Pixel-ZeroBaran...");
+
+  // قوالب الخلفيات التسويقية
+  const templates = await Promise.all([
+    db.backgroundTemplate.create({
+      data: {
+        name: "ستوديو إضاءة ناعمة",
+        category: "studio",
+        prompt: "professional product photography studio with soft white lighting, gradient background, seamless backdrop, high-end commercial look",
+        previewUrl: "",
+      },
+    }),
+    db.backgroundTemplate.create({
+      data: {
+        name: "طاولة خشبية أنيقة",
+        category: "lifestyle",
+        prompt: "rustic wooden table with warm natural light, cozy home environment, lifestyle product photography, shallow depth of field",
+      },
+    }),
+    db.backgroundTemplate.create({
+      data: {
+        name: "شاطئ بحر كاريبي",
+        category: "nature",
+        prompt: "tropical beach with turquoise water, white sand, palm trees, sunny day, commercial advertising background",
+      },
+    }),
+    db.backgroundTemplate.create({
+      data: {
+        name: "مكتب عصري",
+        category: "lifestyle",
+        prompt: "modern minimalist office desk, marble surface, soft natural window light, contemporary interior, premium product display",
+      },
+    }),
+    db.backgroundTemplate.create({
+      data: {
+        name: "خلفية جرادينت نيون",
+        category: "studio",
+        prompt: "neon gradient background, vibrant colors purple to blue, futuristic tech product display, glowing edges",
+      },
+    }),
+    db.backgroundTemplate.create({
+      data: {
+        name: "رصيف مديني ليلي",
+        category: "lifestyle",
+        prompt: "urban city street at night with bokeh lights, modern architecture background, cinematic product shot",
+      },
+    }),
+  ]);
+
+  // مهام معالجة الصور (تجريبية)
+  const jobs = [
+    {
+      source: "telegram",
+      originalUrl: "/uploads/sample-product-1.jpg",
+      thumbnailUrl: "",
+      fileName: "headphones_raw.jpg",
+      fileSize: 1842000,
+      width: 4000,
+      height: 3000,
+      processType: "full",
+      backgroundStyle: "studio",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      processingTimeMs: 4200,
+      resultUrl: "/results/headphones_studio.png",
+      resultSize: 2200000,
+      triggeredBy: "telegram",
+      costSavedUsd: 45.0,
+    },
+    {
+      source: "web",
+      originalUrl: "/uploads/sample-product-2.jpg",
+      fileName: "sneaker_raw.jpg",
+      fileSize: 2400000,
+      width: 4500,
+      height: 3000,
+      processType: "relight",
+      backgroundStyle: "studio",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 4),
+      processingTimeMs: 5800,
+      resultUrl: "/results/sneaker_relight.png",
+      resultSize: 2800000,
+      triggeredBy: "manual",
+      costSavedUsd: 60.0,
+    },
+    {
+      source: "telegram",
+      originalUrl: "/uploads/sample-product-3.jpg",
+      fileName: "watch_raw.jpg",
+      fileSize: 1950000,
+      width: 4000,
+      height: 4000,
+      processType: "composite",
+      backgroundStyle: "lifestyle",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 8),
+      processingTimeMs: 7200,
+      resultUrl: "/results/watch_wooden_table.png",
+      resultSize: 3100000,
+      triggeredBy: "telegram",
+      costSavedUsd: 85.0,
+    },
+    {
+      source: "api",
+      originalUrl: "/uploads/sample-product-4.jpg",
+      fileName: "perfume_raw.jpg",
+      fileSize: 1620000,
+      width: 3500,
+      height: 4500,
+      processType: "full",
+      backgroundStyle: "studio",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 12),
+      processingTimeMs: 6300,
+      resultUrl: "/results/perfume_neon.png",
+      resultSize: 2450000,
+      triggeredBy: "api",
+      costSavedUsd: 70.0,
+    },
+    {
+      source: "web",
+      originalUrl: "/uploads/sample-product-5.jpg",
+      fileName: "coffee_mug_raw.jpg",
+      fileSize: 1280000,
+      width: 3000,
+      height: 3000,
+      processType: "rembg",
+      backgroundStyle: null,
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 18),
+      processingTimeMs: 2100,
+      resultUrl: "/results/coffee_mug_transparent.png",
+      resultSize: 950000,
+      triggeredBy: "manual",
+      costSavedUsd: 25.0,
+    },
+    {
+      source: "telegram",
+      originalUrl: "/uploads/sample-product-6.jpg",
+      fileName: "skincare_raw.jpg",
+      fileSize: 2050000,
+      width: 4000,
+      height: 4000,
+      processType: "composite",
+      backgroundStyle: "nature",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+      processingTimeMs: 8400,
+      resultUrl: "/results/skincare_beach.png",
+      resultSize: 3250000,
+      triggeredBy: "telegram",
+      costSavedUsd: 95.0,
+    },
+    {
+      source: "web",
+      originalUrl: "/uploads/sample-product-7.jpg",
+      fileName: "laptop_raw.jpg",
+      fileSize: 3100000,
+      width: 5000,
+      height: 3500,
+      processType: "full",
+      backgroundStyle: "lifestyle",
+      status: "processing" as const,
+      triggeredBy: "manual",
+      costSavedUsd: 0,
+    },
+    {
+      source: "api",
+      originalUrl: "/uploads/sample-product-8.jpg",
+      fileName: "smartphone_raw.jpg",
+      fileSize: 2800000,
+      width: 4000,
+      height: 5000,
+      processType: "relight",
+      backgroundStyle: "studio",
+      status: "processing" as const,
+      triggeredBy: "api",
+      costSavedUsd: 0,
+    },
+    {
+      source: "telegram",
+      originalUrl: "/uploads/sample-product-9.jpg",
+      fileName: "bottle_raw.jpg",
+      fileSize: 1450000,
+      width: 3500,
+      height: 3500,
+      processType: "composite",
+      backgroundStyle: "industrial",
+      status: "failed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 6),
+      errorMessage: "HuggingFace API timeout بعد 30 ثانية. سيتم إعادة المحاولة تلقائياً.",
+      triggeredBy: "telegram",
+      costSavedUsd: 0,
+    },
+    {
+      source: "web",
+      originalUrl: "/uploads/sample-product-10.jpg",
+      fileName: "watch_luxury_raw.jpg",
+      fileSize: 3200000,
+      width: 4500,
+      height: 4500,
+      processType: "full",
+      backgroundStyle: "lifestyle",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 36),
+      processingTimeMs: 9100,
+      resultUrl: "/results/watch_luxury_office.png",
+      resultSize: 3600000,
+      triggeredBy: "manual",
+      costSavedUsd: 120.0,
+    },
+    {
+      source: "telegram",
+      originalUrl: "/uploads/sample-product-11.jpg",
+      fileName: "headphones2_raw.jpg",
+      fileSize: 2100000,
+      width: 4000,
+      height: 3000,
+      processType: "composite",
+      backgroundStyle: "studio",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 48),
+      processingTimeMs: 5400,
+      resultUrl: "/results/headphones2_neon.png",
+      resultSize: 2700000,
+      triggeredBy: "telegram",
+      costSavedUsd: 65.0,
+    },
+    {
+      source: "api",
+      originalUrl: "/uploads/sample-product-12.jpg",
+      fileName: "bag_raw.jpg",
+      fileSize: 1850000,
+      width: 3500,
+      height: 4500,
+      processType: "full",
+      backgroundStyle: "lifestyle",
+      status: "completed" as const,
+      finishedAt: new Date(Date.now() - 1000 * 60 * 60 * 72),
+      processingTimeMs: 7800,
+      resultUrl: "/results/bag_urban_night.png",
+      resultSize: 3050000,
+      triggeredBy: "api",
+      costSavedUsd: 90.0,
+    },
+  ];
+
+  await Promise.all(jobs.map((j) => db.imageJob.create({ data: j })));
+
+  // إحصائيات يومية لآخر 14 يوم
+  const now = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const total = Math.floor(Math.random() * 25) + 5; // 5-30 jobs/day
+    const completed = Math.floor(total * (0.85 + Math.random() * 0.1));
+    const failed = total - completed - Math.floor(Math.random() * 2);
+    const bytesSaved = completed * 1800000;
+    const costSaved = completed * 65;
+    const avgMs = Math.floor(Math.random() * 5000) + 3000;
+
+    await db.pixelDailyStat.create({
+      data: {
+        date: dayStart.toISOString().split("T")[0],
+        totalJobs: total,
+        completedJobs: completed,
+        failedJobs: Math.max(0, failed),
+        totalImagesProcessed: completed,
+        totalBytesSaved: bytesSaved,
+        totalCostSavedUsd: costSaved,
+        avgProcessingMs: avgMs,
+      },
+    });
+  }
+
+  console.log(`[SEED] Pixel-ZeroBaran: ${templates.length} قالب خلفية`);
+  console.log(`[SEED] Pixel-ZeroBaran: ${jobs.length} مهمة معالجة صور`);
+  console.log("[SEED] Pixel-ZeroBaran: 14 يوم إحصائيات");
 }
 
 seed()
