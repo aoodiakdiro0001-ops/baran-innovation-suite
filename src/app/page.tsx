@@ -17,6 +17,13 @@ import {
   Github,
   Sparkles,
   ChevronLeft,
+  Mail,
+  Phone,
+  User,
+  Bitcoin,
+  ShoppingBag,
+  Coins,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,14 +35,18 @@ import { AlertsList } from "@/components/sentinel/alerts-list";
 import { SettingsPanel } from "@/components/sentinel/settings-panel";
 import { ArchitectureDocs } from "@/components/sentinel/architecture-docs";
 import { NewScanCard } from "@/components/sentinel/new-scan-card";
+import { SupportContact } from "@/components/sentinel/support-contact";
+import { PaymentMethods } from "@/components/sentinel/payment-methods";
+import { ReferralLinks } from "@/components/sentinel/referral-links";
 
-type TabKey = "overview" | "scans" | "vulnerabilities" | "alerts" | "settings" | "docs";
+type TabKey = "overview" | "scans" | "vulnerabilities" | "alerts" | "settings" | "support" | "docs";
 
 const tabs: { key: TabKey; label: string; icon: typeof Activity }[] = [
   { key: "overview", label: "نظرة عامة", icon: Activity },
   { key: "scans", label: "الفحوصات", icon: Radar },
   { key: "vulnerabilities", label: "الثغرات", icon: Bug },
   { key: "alerts", label: "التنبيهات", icon: Bell },
+  { key: "support", label: "الدفع والدعم", icon: ShieldCheck },
   { key: "settings", label: "الإعدادات", icon: Settings },
   { key: "docs", label: "التوثيق", icon: BookOpen },
 ];
@@ -172,6 +183,13 @@ export default function Home() {
             )}
             {activeTab === "vulnerabilities" && <VulnerabilitiesList />}
             {activeTab === "alerts" && <AlertsList />}
+            {activeTab === "support" && (
+              <>
+                <SupportContact />
+                <PaymentMethods />
+                <ReferralLinks />
+              </>
+            )}
             {activeTab === "settings" && <SettingsPanel />}
             {activeTab === "docs" && <ArchitectureDocs />}
         </motion.div>
@@ -266,7 +284,7 @@ function Footer() {
   return (
     <footer className="mt-auto border-t border-border/60 bg-background/50 backdrop-blur">
       <div className="container mx-auto max-w-7xl px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-md bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
@@ -281,50 +299,111 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold mb-2 text-cyan-600 dark:text-cyan-400">الموارد المجانية</h4>
+            <h4 className="text-xs font-semibold mb-2 text-cyan-600 dark:text-cyan-400">
+              تواصل مع المالك
+            </h4>
             <ul className="space-y-1 text-xs text-muted-foreground">
               <li className="flex items-center gap-1.5">
-                <ChevronLeft className="h-3 w-3" />
-                GitHub Actions (مجدول)
+                <Mail className="h-3 w-3" />
+                <a href="mailto:baranavisat@gmail.com" className="hover:text-cyan-500 transition-colors">
+                  baranavisat@gmail.com
+                </a>
               </li>
               <li className="flex items-center gap-1.5">
-                <ChevronLeft className="h-3 w-3" />
-                Semgrep + Nuclei + Nmap
+                <Phone className="h-3 w-3" />
+                <a
+                  href="https://wa.me/00905313263722"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-cyan-500 transition-colors"
+                >
+                  00905313263722 (واتساب)
+                </a>
               </li>
               <li className="flex items-center gap-1.5">
-                <ChevronLeft className="h-3 w-3" />
-                Gemini / Groq API (Free Tier)
-              </li>
-              <li className="flex items-center gap-1.5">
-                <ChevronLeft className="h-3 w-3" />
-                Supabase (PostgreSQL)
-              </li>
-              <li className="flex items-center gap-1.5">
-                <ChevronLeft className="h-3 w-3" />
-                Telegram Bot API
+                <User className="h-3 w-3" />
+                Baran Avisat
               </li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-xs font-semibold mb-2 text-cyan-600 dark:text-cyan-400">
-              الدعم وحقوق الملكية
+              طرق الدفع
             </h4>
             <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>© 2026 Cyber-SentinelBaran. جميع الحقوق محفوظة.</li>
-              <li>المشروع رقم #14 في سجل قاعدة بيانات الابتكار البرمجي.</li>
-              <li>الترخيص: MIT (مفتوح المصدر بالكامل).</li>
-              <li className="text-cyan-600 dark:text-cyan-400">البريد: support@sentinelbaran.io</li>
-              <li className="text-cyan-600 dark:text-cyan-400">تليجرام: @sentinelbaran_support</li>
+              <li className="flex items-center gap-1.5">
+                <span>🇹🇷</span>
+                <span className="font-mono text-[10px]" dir="ltr">TR10 0001...01</span>
+                <span className="text-[10px]">(TRY)</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span>💵</span>
+                <span className="font-mono text-[10px]" dir="ltr">TR80 0001...02</span>
+                <span className="text-[10px]">(USD)</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Bitcoin className="h-3 w-3 text-yellow-500" />
+                <span className="font-mono text-[10px]" dir="ltr">bc1q8dht...zhzf6c</span>
+                <span className="text-[10px]">(BTC)</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span>₮</span>
+                <span className="font-mono text-[10px]" dir="ltr">TLWdTjqq...oxeWW</span>
+                <span className="text-[10px]">(USDT-TRC20)</span>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-semibold mb-2 text-cyan-600 dark:text-cyan-400">
+              متجر وروابط
+            </h4>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li className="flex items-center gap-1.5">
+                <ShoppingBag className="h-3 w-3" />
+                <a
+                  href="https://baranavi.gumroad.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-cyan-500 transition-colors"
+                >
+                  متجر Gumroad الرسمي
+                </a>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Coins className="h-3 w-3" />
+                <a
+                  href="https://www.binance.com/activity/referral-entry/CPA?ref=CPA_006Q5UBO64"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-cyan-500 transition-colors"
+                >
+                  إحالة Binance
+                </a>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Gift className="h-3 w-3" />
+                <a
+                  href="https://pocket-friends.co/r/hvb4v0f1tt"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-cyan-500 transition-colors"
+                >
+                  Pocket Friends
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="pt-4 border-t border-border/40 text-center text-[11px] text-muted-foreground">
           <p>
-            صُمِّم وبُنِيَ بحب لحماية مطوري ومؤسسات العالم العربي والإسلامي.
-            <br className="sm:hidden" />{" "}
-            ساعد على نشر الوعي الأمني — شارك المشروع مع زملائك المطورين.
+            © 2026 Cyber-SentinelBaran. جميع الحقوق محفوظة.
+            المشروع رقم #14 في سجل قاعدة بيانات الابتكار البرمجي.
+          </p>
+          <p className="mt-1">
+            صُمِّم وبُنِيَ بحب لحماية مطوري ومؤسسات العالم العربي والإسلامي. 🛡️
           </p>
         </div>
       </div>

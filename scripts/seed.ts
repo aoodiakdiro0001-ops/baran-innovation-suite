@@ -462,6 +462,8 @@ async function seed() {
     db.setting.create({ data: { key: "TELEGRAM_CHAT_ID", value: "" } }),
     db.setting.create({ data: { key: "GEMINI_API_KEY", value: "" } }),
     db.setting.create({ data: { key: "GROQ_API_KEY", value: "" } }),
+    db.setting.create({ data: { key: "OPENROUTER_API_KEY", value: "" } }),
+    db.setting.create({ data: { key: "SHODAN_API_KEY", value: "" } }),
     db.setting.create({ data: { key: "SUPABASE_URL", value: "" } }),
     db.setting.create({ data: { key: "SUPABASE_ANON_KEY", value: "" } }),
     db.setting.create({ data: { key: "SCAN_SCHEDULE_CRON", value: "0 2 * * *" } }),
@@ -469,12 +471,28 @@ async function seed() {
     db.setting.create({ data: { key: "AI_PROVIDER", value: "gemini" } }),
   ]);
 
+  // معلومات المالك والدعم (عامة، لا مفاتيح)
+  await Promise.all([
+    db.setting.create({ data: { key: "OWNER_EMAIL", value: "baranavisat@gmail.com" } }),
+    db.setting.create({ data: { key: "OWNER_PHONE", value: "00905313263722" } }),
+    db.setting.create({ data: { key: "OWNER_NAME", value: "Baran Avisat" } }),
+    db.setting.create({ data: { key: "OWNER_USDT_ADDRESS", value: "TLWdTjqqogkXNEXGiPWsGdjFP6ioycxeWW" } }),
+    db.setting.create({ data: { key: "OWNER_BTC_ADDRESS", value: "bc1q8dhtdrndxsl70e97t8grydfe6pjue37zrhzf6c" } }),
+    db.setting.create({ data: { key: "OWNER_IBAN_TRY", value: "TR10 0001 0090 1008 4013 0050 01" } }),
+    db.setting.create({ data: { key: "OWNER_IBAN_USD", value: "TR80 0001 0090 1008 4013 0050 02" } }),
+    db.setting.create({ data: { key: "GUMROAD_STORE_URL", value: "https://baranavi.gumroad.com/" } }),
+    db.setting.create({ data: { key: "BINANCE_REFERRAL_URL", value: "https://www.binance.com/activity/referral-entry/CPA?ref=CPA_006Q5UBO64" } }),
+    db.setting.create({ data: { key: "POCKET_FRIENDS_REFERRAL_URL", value: "https://pocket-friends.co/r/hvb4v0f1tt" } }),
+    db.setting.create({ data: { key: "SOLANA_WALLET_ADDRESS", value: "" } }), // أضف يدوياً لاحقاً
+    db.setting.create({ data: { key: "EVM_WALLET_ADDRESS", value: "0xDda2b17Dc7437700DE7EeFe564610a1976de6c" } }), // عنوان عام فقط
+  ]);
+
   console.log("[SEED] تم إنشاء البيانات بنجاح");
   console.log(`[SEED] الفحوصات: ${scans.length}`);
   console.log(`[SEED] الثغرات: ${vulnerabilities.length}`);
   console.log("[SEED] التقارير: 2");
   console.log("[SEED] التنبيهات: 5");
-  console.log("[SEED] الإعدادات: 9");
+  console.log("[SEED] الإعدادات: 22 (مفاتيح فارغة + معلومات المالك العامة)");
 }
 
 seed()

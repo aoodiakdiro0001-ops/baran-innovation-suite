@@ -23,12 +23,20 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 
 type SettingsMap = Record<string, string>;
 
-const secretsKeys = ["TELEGRAM_BOT_TOKEN", "GEMINI_API_KEY", "GROQ_API_KEY", "SUPABASE_ANON_KEY"];
+const secretsKeys = [
+  "TELEGRAM_BOT_TOKEN",
+  "GEMINI_API_KEY",
+  "GROQ_API_KEY",
+  "OPENROUTER_API_KEY",
+  "SHODAN_API_KEY",
+  "SUPABASE_ANON_KEY",
+];
 
 export function SettingsPanel() {
   const [settings, setSettings] = useState<SettingsMap>({});
@@ -221,6 +229,7 @@ export function SettingsPanel() {
                 <SelectContent>
                   <SelectItem value="gemini">Google Gemini (Free Tier)</SelectItem>
                   <SelectItem value="groq">Groq API (Free Tier)</SelectItem>
+                  <SelectItem value="openrouter">OpenRouter (نماذج متعددة)</SelectItem>
                   <SelectItem value="zai">Z.ai SDK</SelectItem>
                 </SelectContent>
               </Select>
@@ -255,7 +264,7 @@ export function SettingsPanel() {
             </div>
             <div>
               <Label htmlFor="GROQ_API_KEY" className="text-xs mb-1.5 block">
-                Groq API Key (بديل)
+                Groq API Key (بديل سريع)
               </Label>
               <Input
                 id="GROQ_API_KEY"
@@ -265,6 +274,65 @@ export function SettingsPanel() {
                 placeholder="gsk_..."
                 className="text-xs font-mono"
               />
+            </div>
+            <div>
+              <Label htmlFor="OPENROUTER_API_KEY" className="text-xs mb-1.5 block">
+                OpenRouter API Key (نماذج متعددة)
+              </Label>
+              <Input
+                id="OPENROUTER_API_KEY"
+                type={revealed.OPENROUTER_API_KEY ? "text" : "password"}
+                value={settings.OPENROUTER_API_KEY || ""}
+                onChange={(e) => update("OPENROUTER_API_KEY", e.target.value)}
+                placeholder="sk-or-v1-..."
+                className="text-xs font-mono"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Shodan Settings - جديد */}
+        <Card className="border-rose-500/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-rose-500/10">
+                <Globe className="h-4 w-4 text-rose-500" />
+              </div>
+              Shodan API (استخبارات الإنترنت)
+              <Badge variant="outline" className="text-xs mr-auto">OSINT</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label htmlFor="SHODAN_API_KEY" className="text-xs mb-1.5 block">
+                Shodan API Key
+              </Label>
+              <div className="relative">
+                <Input
+                  id="SHODAN_API_KEY"
+                  type={revealed.SHODAN_API_KEY ? "text" : "password"}
+                  value={settings.SHODAN_API_KEY || ""}
+                  onChange={(e) => update("SHODAN_API_KEY", e.target.value)}
+                  placeholder="شامل أرقام وحروف"
+                  className="text-xs font-mono pr-10"
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-1 left-1 h-7 w-7"
+                  onClick={() => toggleReveal("SHODAN_API_KEY")}
+                >
+                  {revealed.SHODAN_API_KEY ? (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                يُستخدم في فحص المنافذ المكشوفة على الإنترنت واستكشاف الخدمات. مجاني من shodan.io.
+              </p>
             </div>
           </CardContent>
         </Card>
