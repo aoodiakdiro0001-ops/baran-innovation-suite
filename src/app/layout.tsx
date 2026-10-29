@@ -1,0 +1,69 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Cyber-SentinelBaran | منظومة الفحص الأمني الذكية",
+  description:
+    "نظام ذكي متكامل لاختبار الاختراق الآلي، فحص الويب ومنافذ الشبكات، واكتشاف الثغرات الأمنية في التطبيقات والمواقع باستخدام أدوات مفتوحة المصدر مجانية بالكامل.",
+  keywords: [
+    "Cyber-SentinelBaran",
+    "اختبار الاختراق",
+    "الفحص الأمني",
+    "OWASP Top 10",
+    "Semgrep",
+    "Nuclei",
+    "Nmap",
+    "Gemini AI",
+    "Supabase",
+    "Telegram Bot",
+    "GitHub Actions",
+    "حماية الذاتية اللامركزية",
+  ],
+  authors: [{ name: "Cyber-SentinelBaran Team" }],
+  icons: {
+    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+  },
+  openGraph: {
+    title: "Cyber-SentinelBaran",
+    description: "منظومة الفحص الأمني واختبار الاختراق والحماية الذاتية اللامركزية",
+    url: "https://chat.z.ai",
+    siteName: "Cyber-SentinelBaran",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cyber-SentinelBaran",
+    description: "منظومة الفحص الأمني واختبار الاختراق والحماية الذاتية اللامركزية",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+      >
+        {children}
+        <Toaster />
+        <SonnerToaster position="top-center" richColors />
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,99 @@
+// ============================================================
+// Cyber-SentinelBaran | Prisma Schema
+// منظومة الفحص الأمني، اختبار الاختراق، والحماية الذاتية اللامركزية
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// جدول الفحوصات الأمنية المجدولة
+model Scan {
+  id            String   @id @default(cuid())
+  target        String   // الهدف: مستودع GitHub أو عنوان خادم
+  scanType      String   // semgrep | nuclei | nmap | full
+  status        String   @default("pending") // pending | running | completed | failed
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime?
+  totalFiles    Int      @default(0)
+  totalFindings Int      @default(0)
+  criticalCount Int      @default(0)
+  highCount     Int      @default(0)
+  mediumCount   Int      @default(0)
+  lowCount      Int      @default(0)
+  triggeredBy   String   @default("cron") // cron | manual | push
+  commitSha     String?
+  logPath       String?
+  createdAt     DateTime @default(now())
+
+  vulnerabilities Vulnerability[]
+
+  @@index([target])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// جدول الثغرات الأمنية المكتشفة
+model Vulnerability {
+  id            String   @id @default(cuid())
+  scanId        String
+  scan          Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  title         String
+  severity      String   // critical | high | medium | low | info
+  category      String   // OWASP Top 10 | CVE | Misconfiguration
+  cveId         String?
+  filePath      String?
+  lineNumber    Int?
+  codeSnippet   String?
+  description   String
+  remediation   String?
+  aiSuggestion  String?
+  status        String   @default("open") // open | fixed | ignored | in_progress
+  detectedAt    DateTime @default(now())
+  fixedAt       DateTime?
+
+  @@index([scanId])
+  @@index([severity])
+  @@index([status])
+}
+
+// جدول الإعدادات والـ API Keys
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@index([key])
+}
+
+// جدول تقارير الذكاء الاصطناعي
+model AiReport {
+  id           String   @id @default(cuid())
+  scanId       String?
+  summary      String
+  riskScore    Int      // 0-100
+  recommendations String
+  createdAt    DateTime @default(now())
+
+  @@index([scanId])
+  @@index([createdAt])
+}
+
+// جدول سجل التنبيهات المرسلة
+model AlertLog {
+  id         String   @id @default(cuid())
+  channel    String   // telegram | email | webhook
+  recipient  String
+  subject    String
+  body       String
+  status     String   @default("sent") // sent | failed
+  sentAt     DateTime @default(now())
+
+  @@index([channel])
+  @@index([sentAt])
+}

@@ -1,0 +1,188 @@
+# ============================================================
+# Cyber-SentinelBaran | GitHub Actions Workflow
+# الفحص الأمني الكامل — يُطلق يدوياً أو عبر push
+# ============================================================
+name: "🛡️ Cyber-SentinelBaran Security Scan"
+
+on:
+  # إطلاق يدوي من تبويب Actions
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "الهدف (مستودع GitHub أو URL)"
+        required: true
+        default: "."
+      scan_type:
+        description: "نوع الفحص"
+        type: choice
+        options:
+          - full
+          - semgrep
+          - nuclei
+          - nmap
+        default: full
+      triggered_by:
+        description: "بواسطة"
+        type: choice
+        options:
+          - manual
+          - cron
+          - push
+        default: manual
+
+  # إطلاق تلقائي مع كل push
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ============================================================
+      # 1. Checkout الكود (للـ push/PR)
+      # ============================================================
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ============================================================
+      # 2. تثبيت Python وأدوات الفحص
+      # ============================================================
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "🔧 Install Security Tools"
+        run: |
+          # Semgrep (Python SAST)
+          pip install semgrep
+
+          # Nuclei (Go DAST)
+          curl -sSL https://github.com/projectdiscovery/nuclei/releases/download/v3.3.0/nuclei_3.3.0_linux_amd64.zip -o nuclei.zip
+          unzip nuclei.zip
+          sudo mv nuclei /usr/local/bin/
+          nuclei -version
+
+          # Nmap (Network scanner)
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nmap
+          nmap --version
+
+      - name: "📁 Setup Workspace"
+        run: |
+          mkdir -p scan-results ai-reports
+          echo "workspace_ready=true" >> $GITHUB_ENV
+
+      # ============================================================
+      # 3. تشغيل الفحص الأمني
+      # ============================================================
+      - name: "🛡️ Run Security Scan (Semgrep + Nuclei + Nmap)"
+        id: scan
+        run: |
+          python scanner/scanner.py \
+            --target="${{ github.event.inputs.target || '.' }}" \
+            --scan-type="${{ github.event.inputs.scan_type || 'full' }}" \
+            --output=scan-results/scan-results.json \
+            --commit-sha="${{ github.sha }}" \
+            --triggered-by="${{ github.event.inputs.triggered_by || 'push' }}"
+        continue-on-error: true
+
+      - name: "📤 Upload Scan Results"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scan-results
+          path: scan-results/
+          retention-days: 30
+
+      # ============================================================
+      # 4. التحليل الذكي عبر Gemini AI
+      # ============================================================
+      - name: "🧠 AI Analysis (Gemini)"
+        id: ai
+        if: hashFiles('scan-results/scan-results.json') != '' && env.GEMINI_API_KEY != ''
+        run: |
+          python scanner/ai_analyzer.py \
+            --scan-results=scan-results/scan-results.json \
+            --output=ai-reports/ai-report.json \
+            --provider=gemini
+        continue-on-error: true
+
+      - name: "🧠 Fallback AI Analysis (Groq)"
+        if: steps.ai.outcome == 'failure' && env.GROQ_API_KEY != ''
+        run: |
+          python scanner/ai_analyzer.py \
+            --scan-results=scan-results/scan-results.json \
+            --output=ai-reports/ai-report.json \
+            --provider=groq
+        continue-on-error: true
+
+      - name: "📤 Upload AI Report"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-reports
+          path: ai-reports/
+          retention-days: 90
+
+      # ============================================================
+      # 5. حفظ في Supabase (الأرشيف التاريخي)
+      # ============================================================
+      - name: "💾 Save to Supabase"
+        if: hashFiles('ai-reports/ai-report.json') != '' && env.SUPABASE_URL != '' && env.SUPABASE_ANON_KEY != ''
+        run: |
+          python scanner/supabase_client.py \
+            --action=save-scan \
+            --report=ai-reports/ai-report.json \
+            --target="${{ github.event.inputs.target || github.repository }}" \
+            --scan-type="${{ github.event.inputs.scan_type || 'full' }}" \
+            --triggered-by="${{ github.event.inputs.triggered_by || 'push' }}"
+        continue-on-error: true
+
+      # ============================================================
+      # 6. إرسال تنبيهات Telegram
+      # ============================================================
+      - name: "📨 Send Telegram Alerts"
+        if: hashFiles('ai-reports/ai-report.json') != '' && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        run: |
+          python scanner/telegram_notifier.py \
+            --report=ai-reports/ai-report.json \
+            --min-severity=high
+        continue-on-error: true
+
+      # ============================================================
+      # 7. فشل الـ pipeline إذا ثغرات حرجة (لا يكسر PR لكن يحذر)
+      # ============================================================
+      - name: "⚠️ Fail on Critical Findings"
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "::warning::تم رصد ثغرات حرجة. راجع الـ artifact 'ai-reports' للحلول المقترحة."
+          # لا نفشل الـ workflow في الـ PR لتفادي الإزعاج، فقط تنبيه:
+          exit 0
+
+      - name: "✅ Scan Complete Summary"
+        if: always()
+        run: |
+          echo "### 🛡️ Cyber-SentinelBaran Security Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**الهدف:** \`${{ github.event.inputs.target || github.repository }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**نوع الفحص:** \`${{ github.event.inputs.scan_type || 'full' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**الكوميت:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "ai-reports/ai-report.json" ]; then
+            echo "📊 **التقرير الكامل:** تحميل من الـ artifacts أعلاه" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+================================================================
+Cyber-SentinelBaran | requirements.txt
+================================================================
+المتطلبات لتنفيذ سكربتات Python (تُثبَّت داخل GitHub Actions runner)
+"""
+
+# المتطلبات الأساسية (Python stdlib يكفي لمعظم الأشياء):
+# - urllib.request, json, subprocess, pathlib, datetime
+# كلها مُدمجة في Python 3.9+ دون حاجة لتثبيت.
+
+# أدوات خارجية (تُثبَّت عبر apt أو brew في الـ runner):
+# - semgrep      : pip install semgrep   (أو  brew install semgrep/tap/semgrep)
+# - nuclei       : curl -sSL https://github.com/projectdiscovery/nuclei/releases | ...
+#                  (أو  go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest)
+# - nmap         : apt install nmap      (مُثبَّت افتراضياً في Ubuntu runners)
+
+# ملاحظة: لا تحتاج أي pip install إضافي — كل التبعيات من Python stdlib.
+# هذا يقلل وقت التثبيت ويضمن التوافق التام.

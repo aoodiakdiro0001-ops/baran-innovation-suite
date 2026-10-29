@@ -1,0 +1,94 @@
+# ============================================================
+# Cyber-SentinelBaran | Scheduled Security Scan
+# يُشغّل يومياً الساعة 2:00 صباحاً UTC (متوافق مع 5:00 صباحاً بتوقيت مكة)
+# ============================================================
+name: "⏰ Cyber-SentinelBaran Scheduled Scan"
+
+on:
+  schedule:
+    # كل يوم الساعة 2:00 UTC
+    - cron: "0 2 * * *"
+    # كل سبت الساعة 4:00 UTC (فحص أعمق أسبوعي)
+    - cron: "0 4 * * 6"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "الهدف"
+        required: true
+        default: "."
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+jobs:
+  scheduled-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "🔧 Install Tools"
+        run: |
+          pip install semgrep
+          curl -sSL https://github.com/projectdiscovery/nuclei/releases/download/v3.3.0/nuclei_3.3.0_linux_amd64.zip -o nuclei.zip
+          unzip nuclei.zip
+          sudo mv nuclei /usr/local/bin/
+          sudo apt-get update -qq && sudo apt-get install -y -qq nmap
+
+      - name: "🛡️ Full Scheduled Scan"
+        run: |
+          python scanner/scanner.py \
+            --target="${{ github.event.inputs.target || '.' }}" \
+            --scan-type=full \
+            --output=scan-results/scan-results.json \
+            --commit-sha="${{ github.sha }}" \
+            --triggered-by=cron
+
+      - name: "🧠 AI Analysis"
+        if: env.GEMINI_API_KEY != ''
+        run: |
+          python scanner/ai_analyzer.py \
+            --scan-results=scan-results/scan-results.json \
+            --output=ai-reports/ai-report.json \
+            --provider=gemini
+
+      - name: "💾 Archive in Supabase"
+        if: env.SUPABASE_URL != '' && env.SUPABASE_ANON_KEY != ''
+        run: |
+          python scanner/supabase_client.py \
+            --action=save-scan \
+            --report=ai-reports/ai-report.json \
+            --target="${{ github.event.inputs.target || github.repository }}" \
+            --scan-type=full \
+            --triggered-by=cron
+
+      - name: "📨 Telegram Notification"
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        run: |
+          python scanner/telegram_notifier.py \
+            --report=ai-reports/ai-report.json \
+            --min-severity=medium
+
+      - name: "📤 Upload Artifacts"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-scan-${{ github.run_id }}
+          path: |
+            scan-results/
+            ai-reports/
+          retention-days: 90
