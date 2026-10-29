@@ -147,10 +147,12 @@ cyber-sentinelbaran/
 
 ## 📞 الدعم والمساهمة
 
-- 📧 البريد: `support@sentinelbaran.io`
-- 💬 تليجرام: `@sentinelbaran_support`
-- 🐛 للتبليغ عن الثغرات: security@sentinelbaran.io
-- 🤝 للدعم والمساهمة: opensource@sentinelbaran.io
+- 👤 المالك: **Baran Avisat**
+- 📧 البريد الرسمي للدعم: `baranavisat@gmail.com`
+- 💬 واتساب / الهاتف: `00905313263722`
+- 🛍️ المتجر الرسمي: https://baranavi.gumroad.com/
+- 🐛 للتبليغ عن الثغرات: `baranavisat@gmail.com` (عنوان الرسالة: Security Report)
+- 🤝 للدعم والمساهمة: `baranavisat@gmail.com`
 
 ---
 
@@ -161,7 +163,7 @@ cyber-sentinelbaran/
 ```
 MIT License
 
-Copyright (c) 2026 Cyber-SentinelBaran Project
+Copyright (c) 2026 Baran Avisat (baranavisat@gmail.com) — Baran Innovation Suite
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -182,7 +184,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...
 
 - **المشروع رقم #14** في سجل قاعدة بيانات الابتكار البرمجي.
 - تاريخ الإبداع: 2026-10-30
-- المؤلف: فريق Cyber-SentinelBaran
+- المؤلف: Baran Avisat (baranavisat@gmail.com)
 
 ---
 

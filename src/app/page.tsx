@@ -582,8 +582,9 @@ function Footer() {
 
         <div className="pt-4 border-t border-border/40 text-center text-[11px] text-muted-foreground">
           <p>
-            © 2026 Baran Innovation Suite. جميع الحقوق محفوظة.
-            المشاريع #13 و #14 في سجل قاعدة بيانات الابتكار البرمجي.
+            © 2026 Baran Avisat — Baran Innovation Suite. جميع الحقوق محفوظة.
+            المؤلف: Baran Avisat | رخصة MIT | المشاريع #13 و #14 في سجل قاعدة بيانات
+            الابتكار البرمجي.
           </p>
           <p className="mt-1">
             صُمِّم وبُنِيَ بحب لحماية مطوري ومؤسسات العالم العربي والإسلامي. 🛡️ + 🎨

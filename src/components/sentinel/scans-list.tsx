@@ -26,10 +26,10 @@ type Scan = {
 };
 
 const statusConfig = {
-  completed: { label: "مكتمل", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  completed: { label: "مكتمل", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10", spin: false },
   running: { label: "قيد التشغيل", icon: Loader2, color: "text-yellow-500", bg: "bg-yellow-500/10", spin: true },
-  failed: { label: "فشل", icon: XCircle, color: "text-red-500", bg: "bg-red-500/10" },
-  pending: { label: "مُعلّق", icon: RefreshCw, color: "text-muted-foreground", bg: "bg-muted/10" },
+  failed: { label: "فشل", icon: XCircle, color: "text-red-500", bg: "bg-red-500/10", spin: false },
+  pending: { label: "مُعلّق", icon: RefreshCw, color: "text-muted-foreground", bg: "bg-muted/10", spin: false },
 };
 
 const scanTypeLabel: Record<string, string> = {

@@ -41,13 +41,12 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Baran Avisat" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo.svg",
   },
   openGraph: {
     title: "Cyber-SentinelBaran",
     description: "منظومة الفحص الأمني واختبار الاختراق والحماية الذاتية اللامركزية",
-    url: "https://chat.z.ai",
-    siteName: "Cyber-SentinelBaran",
+    siteName: "Baran Innovation Suite",
     type: "website",
   },
   twitter: {

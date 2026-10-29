@@ -52,3 +52,6 @@ prompt
 server.log
 # Skills directory
 /skills/
+# local database (never publish)
+db/*.db
+db/*.db-journal

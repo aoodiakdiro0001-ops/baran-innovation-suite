@@ -7,17 +7,17 @@ Cyber-SentinelBaran | إقرار الملكية الفكرية
 الوصف: منظومة الفحص الأمني، اختبار الاختراق، والحماية الذاتية اللامركزية
 رقم المشروع: #14 في سجل قاعدة بيانات الابتكار البرمجي
 تاريخ الإبداع: 2026-10-30
-المؤلف: فريق Cyber-SentinelBaran
+المؤلف: Baran Avisat (baranavisat@gmail.com)
 الترخيص: MIT (مفتوح المصدر بالكامل)
 
 تواصل:
-  - البريد الإلكتروني: support@sentinelbaran.io
-  - تليجرام: @sentinelbaran_support
-  - الأمان: security@sentinelbaran.io
-  - المساهمة: opensource@sentinelbaran.io
+  - البريد الإلكتروني: baranavisat@gmail.com
+  - الهاتف/واتساب: 00905313263722
+  - المتجر الرسمي: https://baranavi.gumroad.com/
+  - الأمان (التبليغ عن الثغرات): baranavisat@gmail.com
 
 حقوق الملكية الفكرية:
-  - جميع الحقوق محفوظة © 2026 Cyber-SentinelBaran.
+  - جميع الحقوق محفوظة © 2026 Baran Avisat — Cyber-SentinelBaran.
   - النظام مفتوح المصدر تحت رخصة MIT.
   - يُسمح بالاستخدام التجاري والتعديل والتوزيع مع الإبقاء على
     إقرار حقوق الملكية الفكرية.
