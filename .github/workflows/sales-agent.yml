@@ -84,7 +84,8 @@ jobs:
         if: env.GEMINI_API_KEY != '' || env.OMNI_GEMINI_API_KEY != '' || env.GROQ_API_KEY != ''
         run: |
           MESSAGE="${{ github.event.inputs.test_message || 'كم سعر الباقة؟' }}"
-          CONV_ID="${{ github.event.inputs.conversation_id || 'cron-conv-'$(date +%s) }}"
+          CONV_ID="${{ github.event.inputs.conversation_id }}"
+          CONV_ID="${CONV_ID:-cron-conv-$(date +%s)}"
           TONE="${{ github.event.inputs.tone || 'professional' }}"
           python scanner/sales/ai_agent.py \
             --message="$MESSAGE" \

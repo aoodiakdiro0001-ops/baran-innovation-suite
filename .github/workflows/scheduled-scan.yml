@@ -45,8 +45,10 @@ jobs:
         run: |
           pip install semgrep
           curl -sSL https://github.com/projectdiscovery/nuclei/releases/download/v3.3.0/nuclei_3.3.0_linux_amd64.zip -o nuclei.zip
-          unzip nuclei.zip
-          sudo mv nuclei /usr/local/bin/
+          mkdir -p .nuclei-bin
+          unzip -q -o nuclei.zip -d .nuclei-bin
+          sudo mv .nuclei-bin/nuclei /usr/local/bin/
+          rm -rf .nuclei-bin nuclei.zip
           sudo apt-get update -qq && sudo apt-get install -y -qq nmap
 
       - name: "🛡️ Full Scheduled Scan"
