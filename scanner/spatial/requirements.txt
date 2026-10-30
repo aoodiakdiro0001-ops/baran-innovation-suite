@@ -1,0 +1,20 @@
+# ============================================================
+# Spatial-ZeroBaran | Python Dependencies
+# ============================================================
+# للتشغيل المحلي:
+#   pip install -r scanner/spatial/requirements.txt
+
+# معالجة الصور (للـ preprocessing للنماذج)
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# إرسال الطلبات لـ Hugging Face و Telegram
+requests>=2.31.0
+
+# ملاحظة: Blender يُثبَّت منفصلاً عبر:
+#   Ubuntu: apt install blender
+#   macOS: brew install --cask blender
+#   Windows: https://blender.org/download
+
+# Hugging Face Inference API و Telegram
+# تُستدعى عبر urllib (Python stdlib) دون SDK إضافي.

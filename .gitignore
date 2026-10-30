@@ -52,6 +52,9 @@ prompt
 server.log
 # Skills directory
 /skills/
-# local database (never publish)
+# never publish local data
+!/.env.example
 db/*.db
 db/*.db-journal
+/dist/
+/tool-results/

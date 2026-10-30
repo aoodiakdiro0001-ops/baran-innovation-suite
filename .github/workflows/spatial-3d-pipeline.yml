@@ -1,0 +1,209 @@
+# ============================================================
+# Spatial-ZeroBaran | GitHub Actions Workflow
+# 3D Asset Generation + Blender Post-Processing Pipeline
+# ============================================================
+name: "🎭 Spatial-ZeroBaran 3D Pipeline"
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "وصف المجسم (إذا كان توليداً نصياً)"
+        required: false
+        default: ""
+      input_image_url:
+        description: "رابط صورة 2D (إذا كان توليداً بصرياً)"
+        required: false
+        default: ""
+      model_source:
+        description: "نموذج التوليد"
+        type: choice
+        options:
+          - TripoSR
+          - Shap-E
+          - DreamGaussian
+        default: TripoSR
+      output_format:
+        description: "صيغة التصدير"
+        type: choice
+        options:
+          - glb
+          - fbx
+          - obj
+          - ply
+        default: glb
+      decimate_ratio:
+        description: "نسبة الـ Decimation (0.05-1.0)"
+        default: "0.15"
+      deliver_to_telegram:
+        description: "إرسال النتيجة إلى Telegram"
+        type: boolean
+        default: true
+      archive_to_supabase:
+        description: "أرشفة في Supabase Storage"
+        type: boolean
+        default: true
+
+env:
+  SPATIAL_HF_TOKEN: ${{ secrets.SPATIAL_HF_TOKEN }}
+  HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+  SPATIAL_TELEGRAM_BOT_TOKEN: ${{ secrets.SPATIAL_TELEGRAM_BOT_TOKEN }}
+  SPATIAL_TELEGRAM_CHAT_ID: ${{ secrets.SPATIAL_TELEGRAM_CHAT_ID }}
+  SPATIAL_SUPABASE_URL: ${{ secrets.SPATIAL_SUPABASE_URL }}
+  SPATIAL_SUPABASE_ANON_KEY: ${{ secrets.SPATIAL_SUPABASE_ANON_KEY }}
+  SPATIAL_SUPABASE_BUCKET: ${{ secrets.SPATIAL_SUPABASE_BUCKET }}
+
+jobs:
+  generate-3d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "📦 Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scanner/spatial/requirements.txt
+
+      - name: "🎭 Install Blender (Headless)"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender
+          blender --version
+
+      - name: "📁 Setup Workspace"
+        run: mkdir -p raw processed
+
+      # ============================================================
+      # 1. تحضير المدخل (تنزيل صورة أو استخدام prompt)
+      # ============================================================
+      - name: "📥 Prepare Input"
+        id: input
+        run: |
+          if [ -n "${{ github.event.inputs.input_image_url }}" ]; then
+            echo "📥 تنزيل صورة من URL..."
+            curl -sSL -o raw/input.png "${{ github.event.inputs.input_image_url }}"
+            ls -la raw/
+            echo "input_type=image" >> $GITHUB_ENV
+          elif [ -n "${{ github.event.inputs.prompt }}" ]; then
+            echo "💬 استخدام prompt نصي: ${{ github.event.inputs.prompt }}"
+            echo "input_type=text" >> $GITHUB_ENV
+          else
+            echo "⚠️ لا مدخل. استخدام prompt تجريبي."
+            echo "input_type=text" >> $GITHUB_ENV
+            echo "PROMPT=ancient greek marble statue" >> $GITHUB_ENV
+          fi
+
+      # ============================================================
+      # 2. توليد المجسم الخام عبر Hugging Face
+      # ============================================================
+      - name: "🎭 Generate 3D Mesh (TripoSR/Shap-E)"
+        run: |
+          if [ "$input_type" = "image" ]; then
+            python scanner/spatial/triposr_generator.py \
+              --input=raw/input.png \
+              --output=raw/raw_mesh.obj \
+              --model="${{ github.event.inputs.model_source || 'TripoSR' }}"
+          else
+            PROMPT="${{ github.event.inputs.prompt || 'ancient greek marble statue' }}"
+            python scanner/spatial/triposr_generator.py \
+              --prompt="$PROMPT" \
+              --output=raw/raw_mesh.obj \
+              --model="${{ github.event.inputs.model_source || 'TripoSR' }}"
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 3. معالجة Blender Headless (Decimation + UV + Textures)
+      # ============================================================
+      - name: "🔧 Blender Post-Processing"
+        run: |
+          OUTPUT_FORMAT="${{ github.event.inputs.output_format || 'glb' }}"
+          python scanner/spatial/blender_processor.py \
+            --input=raw/raw_mesh.obj \
+            --output=processed/final_asset.$OUTPUT_FORMAT \
+            --decimate=${{ github.event.inputs.decimate_ratio || '0.15' }} \
+            --uv-maps \
+            --textures
+        continue-on-error: true
+
+      # ============================================================
+      # 4. أرشفة في Supabase Storage
+      # ============================================================
+      - name: "💾 Archive to Supabase"
+        if: github.event.inputs.archive_to_supabase == 'true' && env.SPATIAL_SUPABASE_URL != '' && env.SPATIAL_SUPABASE_ANON_KEY != ''
+        run: |
+          # رفع بسيط عبر HTTP API
+          for f in processed/*; do
+            if [ -f "$f" ]; then
+              FILENAME=$(basename "$f")
+              BUCKET="${{ env.SPATIAL_SUPABASE_BUCKET || 'spatial-assets' }}"
+              curl -sS -X POST \
+                "${{ env.SPATIAL_SUPABASE_URL }}/storage/v1/object/$BUCKET/$FILENAME" \
+                -H "Authorization: Bearer ${{ env.SPATIAL_SUPABASE_ANON_KEY }}" \
+                -H "Content-Type: application/octet-stream" \
+                -H "x-upsert: true" \
+                --data-binary "@$f" || true
+            fi
+          done
+        continue-on-error: true
+
+      # ============================================================
+      # 5. تسليم عبر Telegram
+      # ============================================================
+      - name: "📨 Deliver via Telegram"
+        if: github.event.inputs.deliver_to_telegram == 'true' && env.SPATIAL_TELEGRAM_BOT_TOKEN != '' && env.SPATIAL_TELEGRAM_CHAT_ID != ''
+        run: |
+          OUTPUT_FORMAT="${{ github.event.inputs.output_format || 'glb' }}"
+          ASSET_PATH="processed/final_asset.$OUTPUT_FORMAT"
+          REPORT_PATH="processed/final_asset_report.json"
+          if [ -f "$ASSET_PATH" ]; then
+            python scanner/spatial/telegram_delivery.py \
+              --asset-path="$ASSET_PATH" \
+              --name="Spatial-ZeroBaran Asset" \
+              --report="$REPORT_PATH" 2>/dev/null || true
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 6. Upload Artifacts
+      # ============================================================
+      - name: "📤 Upload 3D Assets"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spatial-3d-${{ github.run_id }}
+          path: |
+            raw/
+            processed/
+          retention-days: 30
+
+      # ============================================================
+      # 7. ملخص
+      # ============================================================
+      - name: "✅ Summary"
+        if: always()
+        run: |
+          echo "### 🎭 Spatial-ZeroBaran — 3D Pipeline" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**النموذج:** \`${{ github.event.inputs.model_source || 'TripoSR' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**الصيغة:** \`${{ github.event.inputs.output_format || 'glb' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Decimation:** \`${{ github.event.inputs.decimate_ratio || '0.15' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "processed/final_asset_report.json" ]; then
+            cat processed/final_asset_report.json | python3 -c "
+          import json, sys
+            r = json.load(sys.stdin)
+            print(f\"**المضلعات الأصلية:** {r.get('original_polygons', 0):,}\")
+            print(f\"**المضلعات النهائية:** {r.get('final_polygons', 0):,}\")
+            print(f\"**نسبة التقليل:** {r.get('actual_reduction_pct', 0)}%\")
+            print(f\"**حجم الملف:** {r.get('output_size_bytes', 0) / 1024:.1f} KB\")
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi

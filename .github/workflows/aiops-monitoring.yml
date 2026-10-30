@@ -1,0 +1,190 @@
+# ============================================================
+# AIOps-ZeroBaran | GitHub Actions Workflow
+# Health Monitoring + AI Diagnosis + Auto-Remediation + Telegram Alerts
+# ============================================================
+name: "🤖 AIOps-ZeroBaran Monitoring"
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_all:
+        description: "فحص كل الخدمات المسجّلة (true) أم خدمة محددة فقط (false)"
+        type: boolean
+        default: true
+      specific_service_url:
+        description: "URL خدمة محددة للفحص (يُستخدم فقط إذا كان check_all=false)"
+        default: "https://api.sentinelbaran.io/health"
+      auto_heal:
+        description: "تنفيذ إصلاح ذاتي تلقائي عند اكتشاف حادثة"
+        type: boolean
+        default: true
+
+  schedule:
+    # كل 5 دقائق (UTC)
+    - cron: "*/5 * * * *"
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  AIOPS_TELEGRAM_BOT_TOKEN: ${{ secrets.AIOPS_TELEGRAM_BOT_TOKEN }}
+  AIOPS_TELEGRAM_CHAT_ID: ${{ secrets.AIOPS_TELEGRAM_CHAT_ID }}
+  AIOPS_SUPABASE_URL: ${{ secrets.AIOPS_SUPABASE_URL }}
+  AIOPS_SUPABASE_ANON_KEY: ${{ secrets.AIOPS_SUPABASE_ANON_KEY }}
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "📦 Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scanner/aiops/requirements.txt
+
+      - name: "📁 Setup Workspace"
+        run: mkdir -p aiops-out
+
+      # ============================================================
+      # 1. Health Check (uptime monitoring)
+      # ============================================================
+      - name: "🤖 Health Check (uptime)"
+        id: health
+        run: |
+          if [ "${{ github.event.inputs.check_all }}" = "false" ] && [ -n "${{ github.event.inputs.specific_service_url }}" ]; then
+            TARGET="${{ github.event.inputs.specific_service_url }}"
+          else
+            # Default: check the main API endpoint (replace with multi-service loop in production)
+            TARGET="https://api.sentinelbaran.io/health"
+          fi
+          echo "TARGET=$TARGET" >> $GITHUB_OUTPUT
+          python scanner/aiops/health_monitor.py \
+            --url="$TARGET" \
+            --timeout=10 \
+            --expected-code=200 \
+            --interval=10 \
+            --count=3 \
+            --output=aiops-out/health-report.json
+        continue-on-error: true
+
+      # ============================================================
+      # 2. AI Diagnosis (if incident detected)
+      # ============================================================
+      - name: "🧠 AI Diagnosis (if incident)"
+        id: diagnose
+        if: steps.health.outcome == 'failure' || steps.health.conclusion == 'failure'
+        env:
+          GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "⚠️ GEMINI_API_KEY missing — skipping diagnosis"
+            exit 0
+          fi
+          # Build incident logs from health report
+          python3 -c "
+          import json
+          with open('aiops-out/health-report.json') as f:
+              data = json.load(f)
+          checks = data.get('checks', [])
+          logs = '\n'.join([f\"[{c.get('timestamp','')}] {c.get('status','?').upper()} code={c.get('code','?')} ms={c.get('response_ms',0)} err={c.get('error','')}\"] for c in checks])
+          with open('aiops-out/error-logs.txt', 'w') as f:
+              f.write(logs)
+          print(f'Final status: {data.get(\"final_status\", \"unknown\")}')
+          "
+
+          python scanner/aiops/ai_diagnostic.py \
+            --logs=aiops-out/error-logs.txt \
+            --incident-type=downtime \
+            --service="${{ steps.health.outputs.TARGET || 'api' }}" \
+            --output=aiops-out/diagnosis.json
+        continue-on-error: true
+
+      # ============================================================
+      # 3. Auto-Remediation (if enabled and incident detected)
+      # ============================================================
+      - name: "🛠️ Auto-Remediation"
+        id: remediate
+        if: |
+          github.event.inputs.auto_heal == 'true' &&
+          (steps.health.outcome == 'failure' || steps.health.conclusion == 'failure')
+        run: |
+          # Determine best action from diagnosis if available
+          ACTION="restart_service"
+          SERVICE="api-gateway"
+          if [ -f "aiops-out/diagnosis.json" ]; then
+            ACTION=$(python3 -c "import json; d=json.load(open('aiops-out/diagnosis.json')); print('auto_restart' if 'restart' in d.get('suggested_action','').lower() else 'clear_cache' if 'flush' in d.get('suggested_action','').lower() else 'auto_restart')")
+          fi
+
+          python scanner/aiops/auto_remediation.py \
+            --incident-id="INC-${{ github.run_id }}" \
+            --action="$ACTION" \
+            --service="$SERVICE" \
+            --dry-run \
+            --output=aiops-out/remediation.json
+        continue-on-error: true
+
+      # ============================================================
+      # 4. Telegram Alert
+      # ============================================================
+      - name: "📨 Telegram Alert"
+        if: |
+          always() &&
+          env.AIOPS_TELEGRAM_BOT_TOKEN != '' &&
+          env.AIOPS_TELEGRAM_CHAT_ID != ''
+        run: |
+          python scanner/aiops/telegram_alerts.py --inline='{
+            "severity": "critical",
+            "server": "${{ steps.health.outputs.TARGET || 'api' }}",
+            "type": "downtime",
+            "title": "AIOps health check failed",
+            "rootCause": "AI diagnosis pending — see workflow logs",
+            "action": "Auto-remediation attempted (${{ github.event.inputs.auto_heal || 'true' }})",
+            "status": "investigating",
+            "duration": "0"
+          }' || true
+        continue-on-error: true
+
+      # ============================================================
+      # 5. Upload Artifacts
+      # ============================================================
+      - name: "📤 Upload Reports"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aiops-${{ github.run_id }}
+          path: aiops-out/
+          retention-days: 7
+
+      # ============================================================
+      # 6. Summary
+      # ============================================================
+      - name: "✅ Summary"
+        if: always()
+        run: |
+          echo "### 🤖 AIOps-ZeroBaran — تقرير المراقبة" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**الهدف:** \`${{ steps.health.outputs.TARGET || 'api' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**فحص شامل:** \`${{ github.event.inputs.check_all || 'true' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**إصلاح ذاتي:** \`${{ github.event.inputs.auto_heal || 'true' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "aiops-out/health-report.json" ]; then
+            cat aiops-out/health-report.json | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          print(f'**الحالة النهائية:** \`${d.get(\"final_status\",\"unknown\").upper()}\`')
+          print(f'**متوسط الاستجابة:** {d.get(\"summary\",{}).get(\"avg_response_ms\",0)}ms')
+          print('')
+          print('| # | الحالة | الكود | ms |')
+          print('|---|---|---|---|')
+          for i, c in enumerate(d.get('checks',[]),1):
+              print(f'| {i} | {c.get(\"status\",\"?\")} | {c.get(\"code\",\"?\")} | {c.get(\"response_ms\",0)} |')
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi

@@ -1,0 +1,4 @@
+# AIOps-ZeroBaran — Python Dependencies
+# الموارد المجانية البحتة (stdlib + requests fallback)
+requests>=2.31.0
+# urllib جزء من Python stdlib — لا يحتاج تثبيت

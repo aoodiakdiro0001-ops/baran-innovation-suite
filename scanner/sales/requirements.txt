@@ -1,0 +1,12 @@
+# ============================================================
+# Omni-Sales ZeroBaran | Python Dependencies
+# ============================================================
+# للتشغيل المحلي:
+#   pip install -r scanner/sales/requirements.txt
+
+# HTTP client للتفاعل مع Gemini / Groq / Telegram APIs
+requests>=2.31.0
+
+# ملاحظة: كل الاتصالات تستخدم urllib (Python stdlib) أيضاً
+# للحصول على agent_smith supabase: pip install supabase-py (اختياري)
+# للحصول على vector embeddings: pip install sentence-transformers (اختياري)

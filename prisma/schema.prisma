@@ -160,3 +160,584 @@ model PixelDailyStat {
   @@unique([date])
   @@index([date])
 }
+
+// ============================================================
+// SEO-GhostBaran | منظومة الرصد والتجسس التسويقي ومحرك تحسين الظهور الذاتي
+// تتبع ترتيب الكلمات المفتاحية، تحليل المنافسين، توليد المحتوى المتصدر
+// ============================================================
+
+// جدول الكلمات المفتاحية المُتتبَّعة
+model Keyword {
+  id            String   @id @default(cuid())
+  keyword       String   // الكلمة المفتاحية
+  locale        String   @default("ar") // ar | en | fr
+  searchVolume  Int      @default(0) // متوسط البحث الشهري
+  difficulty    Int      @default(0) // 0-100 (كلما زاد، زادت صعوبة التصدّر)
+  intent        String   @default("informational") // informational | commercial | transactional | navigational
+  currentRank   Int      @default(0) // الترتيب الحالي للموقع (1 = الصدارة)
+  previousRank  Int      @default(0)
+  bestRank      Int      @default(0)
+  worstRank     Int      @default(0)
+  url           String?  // صفحة موقعك التي تستهدف الكلمة
+  status        String   @default("tracking") // tracking | opportunity | lost | won
+  addedAt       DateTime @default(now())
+
+  snapshots     RankSnapshot[]
+
+  @@index([keyword])
+  @@index([status])
+  @@index([currentRank])
+}
+
+// لقطة تاريخية للترتيب (Time-Series)
+model RankSnapshot {
+  id           String   @id @default(cuid())
+  keywordId    String
+  keyword      Keyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+  rank         Int     // الترتيب في هذه اللحظة
+  competitorRank Int?   // أقوى منافس في تلك اللحظة
+  capturedAt   DateTime @default(now())
+
+  @@index([keywordId])
+  @@index([capturedAt])
+}
+
+// جدول المنافسين المُراقَبين
+model Competitor {
+  id           String   @id @default(cuid())
+  domain       String   // example.com
+  name         String?
+  totalKeywords Int      @default(0)
+  avgRank      Float    @default(0)
+  topKeywords  Int      @default(0) // عدد الكلمات في أول 10 نتائج
+  estTraffic   Int      @default(0) // تقدير الزيارات الشهرية
+  strengths    String?  // JSON string: {backlinks, contentLength, da, etc}
+  addedAt      DateTime @default(now())
+  updatedAt    DateTime?
+
+  @@index([domain])
+}
+
+// محتوى مُولَّد بواسطة AI
+model GeneratedContent {
+  id            String   @id @default(cuid())
+  keywordId     String?
+  title         String
+  slug          String
+  contentType   String   @default("article") // article | landing | product | blog
+  wordCount     Int      @default(0)
+  metaTitle     String?
+  metaDesc      String?
+  body          String
+  headings      String?  // JSON: {h1: [], h2: [], h3: []}
+  suggestedTags String? // JSON array
+  seoScore      Int      @default(0) // 0-100
+  readabilityScore Int   @default(0) // 0-100
+  status        String   @default("draft") // draft | ready | published
+  estimatedTraffic Int   @default(0) // زيارات متوقعة/شهر
+  createdAt     DateTime @default(now())
+
+  @@index([keywordId])
+  @@index([seoScore])
+  @@index([status])
+}
+
+// إحصائيات يومية للـ SEO
+model SeoDailyStat {
+  id              String   @id @default(cuid())
+  date            String   // YYYY-MM-DD
+  keywordsTracked Int      @default(0)
+  avgRank         Float    @default(0)
+  top10Count      Int      @default(0) // كلمات في أول 10
+  top1Count       Int      @default(0) // كلمات في المركز الأول
+  rankImprovements Int     @default(0)
+  rankDrops       Int      @default(0)
+  contentGenerated Int     @default(0)
+  competitorsAnalyzed Int  @default(0)
+
+  @@unique([date])
+  @@index([date])
+}
+
+// ============================================================
+// Data-Nexus ZeroBaran | منظومة تحليل وهندسة البيانات الذاتية اللامركزية
+// ETL Pipeline + AI Insights + Anomaly Detection
+// ============================================================
+
+// جدول مصادر البيانات (Datasets)
+model Dataset {
+  id            String   @id @default(cuid())
+  name          String
+  source        String   // csv | json | sql | api | manual
+  fileName      String?
+  rowCount      Int      @default(0)
+  columnCount   Int      @default(0)
+  sizeBytes     Int      @default(0)
+  schema        String?  // JSON: [{name, type}]
+  qualityScore  Int      @default(0) // 0-100 (نسبة النظافة)
+  missingValues Int      @default(0)
+  duplicates    Int      @default(0)
+  status        String   @default("raw") // raw | processing | cleaned | analyzed | failed
+  uploadedAt    DateTime @default(now())
+  processedAt   DateTime?
+
+  pipelines     Pipeline[]
+  insights      Insight[]
+
+  @@index([source])
+  @@index([status])
+  @@index([uploadedAt])
+}
+
+// جدول عمليات ETL Pipeline
+model Pipeline {
+  id              String   @id @default(cuid())
+  datasetId       String
+  dataset         Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  type            String   // etl | clean | transform | merge | aggregate
+  status          String   @default("pending") // pending | running | completed | failed
+  startedAt       DateTime @default(now())
+  finishedAt      DateTime?
+  durationMs      Int?
+  rowsAffected    Int      @default(0)
+  operations      String?  // JSON: ["drop_na", "dedupe", "type_cast", ...]
+  logPath         String?
+  errorMessage    String?
+
+  @@index([datasetId])
+  @@index([status])
+}
+
+// جدول رؤى AI المُستخرجة
+model Insight {
+  id              String   @id @default(cuid())
+  datasetId       String?
+  dataset         Dataset? @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  type            String   // trend | anomaly | prediction | recommendation | summary
+  title           String
+  body            String
+  confidence      Int      @default(0) // 0-100
+  severity        String   @default("info") // info | low | medium | high | critical
+  metric          String?  // sales | cost | retention | churn | ...
+  predictedValue  Float?
+  actualValue     Float?
+  recommendation  String?
+  createdAt       DateTime @default(now())
+
+  @@index([datasetId])
+  @@index([severity])
+  @@index([type])
+}
+
+// جدول الشذوذ المكتشَف (Anomalies)
+model Anomaly {
+  id              String   @id @default(cuid())
+  metric          String   // sales | cost | latency | errors | ...
+  value           Float
+  expectedRange   String   // JSON: [low, high]
+  severity        String   // low | medium | high | critical
+  description     String
+  detectedAt      DateTime @default(now())
+  notified        Boolean  @default(false)
+
+  @@index([metric])
+  @@index([severity])
+  @@index([detectedAt])
+}
+
+// إحصائيات يومية للبيانات
+model DataDailyStat {
+  id              String   @id @default(cuid())
+  date            String   // YYYY-MM-DD
+  datasetsProcessed Int   @default(0)
+  totalRows       Int      @default(0)
+  avgQualityScore Int      @default(0)
+  insightsGenerated Int    @default(0)
+  anomaliesDetected Int     @default(0)
+  costSavedUsd    Float    @default(0.0)
+  avgPipelineMs   Int      @default(0)
+
+  @@unique([date])
+  @@index([date])
+}
+
+// ============================================================
+// Spatial-ZeroBaran | الاستوديو الذاتي لتوليد ومعالجة المجسمات ثلاثية الأبعاد
+// 3D Asset Generation + Blender Headless Post-Processing
+// ============================================================
+
+// جدول المجسمات ثلاثية الأبعاد المُولَّدة
+model Asset3D {
+  id              String   @id @default(cuid())
+  name            String
+  prompt          String?  // الوصف النصي المستخدم
+  inputType       String   // image | text | sketch
+  inputUrl        String?  // رابط الصورة المدخلة
+  modelSource     String   @default("TripoSR") // TripoSR | Shap-E | DreamGaussian
+  format          String   @default("glb") // glb | obj | fbx | ply
+  fileSizeBytes   Int      @default(0)
+  polygonCount    Int      @default(0)        // عدد المضلعات
+  originalPolyCount Int    @default(0)       // قبل الـ Decimation
+  textureRes       Int      @default(1024)    // دقة الإكساء (512/1024/2048)
+  hasUVMap         Boolean  @default(false)
+  hasTextures      Boolean  @default(true)
+  category         String   @default("generic") // furniture | character | vehicle | prop | environment
+  status           String   @default("pending") // pending | generating | processing | ready | failed
+  thumbnailUrl     String?
+  previewGifUrl    String?
+  downloadUrl      String?
+  rating           Int      @default(0) // 0-5
+  usedIn           String?  // أين استُخدم (Unity / Unreal / Blender)
+  costSavedUsd     Float    @default(0.0)
+  processingMs     Int      @default(0)
+  startedAt        DateTime @default(now())
+  finishedAt       DateTime?
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+
+  versions         AssetVersion[]
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+// جدول إصدارات المجسم (قبل/بعد المعالجة)
+model AssetVersion {
+  id              String   @id @default(cuid())
+  assetId         String
+  asset           Asset3D  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  version         Int      // 1 = خام، 2 = بعد تنظيف، 3 = بعد decimation، إلخ
+  format          String
+  fileSizeBytes   Int
+  polygonCount    Int
+  downloadUrl     String?
+  processingType  String   // raw | cleaned | decimated | textured | optimized
+  createdAt       DateTime @default(now())
+
+  @@index([assetId])
+}
+
+// إحصائيات يومية للمجسمات
+model SpatialDailyStat {
+  id              String   @id @default(cuid())
+  date            String
+  assetsGenerated Int      @default(0)
+  totalPolygonsReduced Int @default(0)
+  totalSizeSavedBytes Int  @default(0)
+  totalCostSavedUsd Float @default(0.0)
+  avgGenerationMs Int      @default(0)
+  avgDecimationRatio Float @default(0.0)
+  successRate     Int      @default(0)
+
+  @@unique([date])
+  @@index([date])
+}
+
+// ============================================================
+// Lead-Sniper ZeroBaran | المنظومة الذاتية لصيد العملاء والتسويق البارد
+// Lead Discovery + AI Outreach + Sales Pipeline
+// ============================================================
+
+// جدول العملاء المحتملين (Leads)
+model Lead {
+  id            String   @id @default(cuid())
+  name          String
+  email        String?
+  phone        String?
+  company      String?
+  title        String?     // المسمى الوظيفي
+  website      String?
+  linkedinUrl  String?
+  industry     String?    // صناعة
+  location     String?
+  source       String   @default("scraper") // scraper | manual | referral | api
+  sourceUrl    String?   // الرابط الذي وُجد فيه
+  signals      String?  // JSON: ["recent_funding", "hiring", "new_product", ...]
+  lastActivity String?  // آخر نشاط علني للعميل
+  score        Int      @default(50) // 0-100 (نسبة الأهلية)
+  status       String   @default("new") // new | contacted | interested | won | lost
+  stage       String   @default("discovery") // discovery | qualified | proposal | negotiation | closed
+  companySize String?  // small | medium | large | enterprise
+  budget       String?  // estimated budget range
+  notes       String?
+  discoveredAt DateTime @default(now())
+  lastContactAt DateTime?
+  convertedAt  DateTime?
+
+  outreaches   Outreach[]
+
+  @@index([status])
+  @@index([stage])
+  @@index([score])
+  @@index([industry])
+}
+
+// جدول رسائل التواصل المُولَّدة (Outreaches)
+model Outreach {
+  id            String   @id @default(cuid())
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaignId   String?
+  channel      String   // email | linkedin | telegram | twitter | whatsapp
+  type         String   // cold | follow_up | reconnect | proposal
+  subject      String?  // للمعلوماتية
+  body         String
+  personalizationScore Int @default(0) // 0-100 (نسبة التخصيص)
+  tone         String   @default("professional") // professional | casual | formal | friendly
+  status       String   @default("draft") // draft | approved | sent | replied | bounced
+  sentAt       DateTime?
+  repliedAt    DateTime?
+  replyContent String?
+  approved     Boolean  @default(false)
+  approvedAt   DateTime?
+  costSavedUsd Float    @default(0.0)
+  createdAt    DateTime @default(now())
+
+  @@index([leadId])
+  @@index([campaignId])
+  @@index([status])
+}
+
+// جدول حملات الصيد (Campaigns)
+model Campaign {
+  id              String   @id @default(cuid())
+  name           String
+  description    String?
+  targetIndustry String?
+  targetLocation String?
+  targetCompanySize String?
+  serviceOffered String?   // الخدمة المعروضة
+  value          Float    @default(0.0) // قيمة الصفقة المتوقعة
+  totalLeads      Int      @default(0)
+  contacted      Int      @default(0)
+  replied        Int      @default(0)
+  won            Int      @default(0)
+  status         String   @default("active") // active | paused | completed | draft
+  crontab        String?  // جدول التشغيل
+  startedAt      DateTime @default(now())
+  endedAt        DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([status])
+  @@index([targetIndustry])
+}
+
+// إحصائيات يومية للصيد
+model LeadDailyStat {
+  id              String   @id @default(cuid())
+  date            String
+  leadsDiscovered Int      @default(0)
+  outreachesGenerated Int @default(0)
+  outreachesApproved Int  @default(0)
+  outreachesSent Int       @default(0)
+  repliesReceived Int      @default(0)
+  dealsWon       Int      @default(0)
+  totalRevenueUsd Float @default(0.0)
+  totalCostSavedUsd Float @default(0.0)
+  avgReplyTimeHours Int  @default(0)
+
+  @@unique([date])
+  @@index([date])
+}
+
+// ============================================================
+// AIOps-ZeroBaran | المهندس الرقمي الذاتي لإدارة واستعادة الخوادم
+// Uptime Monitoring + AI Diagnosis + Self-Healing Auto-Remediation
+// ============================================================
+
+// جدول الخوادم/الخدمات المراقَبة (Monitored Services)
+model MonitoredService {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   @default("http") // http | https | tcp | icmp | database | redis | docker
+  url           String
+  port          Int?
+  interval      Int      @default(60) // فترة الفحص بالثواني
+  timeout       Int      @default(10) // مهلة الانتظار
+  expectedCode  Int      @default(200)
+  enabled       Boolean  @default(true)
+  currentStatus String   @default("up") // up | down | degraded | unknown
+  uptimePct     Float    @default(100.0)
+  lastCheckedAt DateTime?
+  lastDownAt    DateTime?
+  responseTimeMs Int     @default(0)
+  region        String   @default("global") // global | eu | us | asia
+  tags          String?  // JSON array
+  priority      String   @default("normal") // critical | high | normal | low
+  createdAt     DateTime @default(now())
+
+  incidents     Incident[]
+
+  @@index([enabled])
+  @@index([currentStatus])
+  @@index([priority])
+}
+
+// جدول الحوادث (Incidents)
+model Incident {
+  id            String   @id @default(cuid())
+  serviceId     String
+  service       MonitoredService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  severity      String   // critical | high | medium | low
+  status        String   @default("open") // open | investigating | diagnosed | healing | resolved | failed
+  type          String   // downtime | high_cpu | high_memory | error_rate | timeout | crash | disk_full
+  title         String
+  description   String
+  logs          String?  // آخر 100 سطر من سجل الأخطاء
+  rootCause     String?  // سبب العطل الذي اكتشفه الـ AI
+  startedAt     DateTime @default(now())
+  detectedAt    DateTime?
+  diagnosedAt   DateTime?
+  healedAt      DateTime?
+  resolvedAt    DateTime?
+  durationSec   Int      @default(0)
+  affectedUsers Int      @default(0)
+  costImpactUsd Float    @default(0.0)
+
+  remediations  Remediation[]
+
+  @@index([serviceId])
+  @@index([severity])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// جدول إجراءات الإصلاح (Remediations)
+model Remediation {
+  id            String   @id @default(cuid())
+  incidentId     String
+  incident      Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  type          String   // auto_restart | clear_cache | kill_process | scale_up | failover | notify | custom
+  action        String   // الأمر المنفَّذ (e.g., "systemctl restart nginx")
+  aiSuggested   Boolean  @default(false) // هل اقترحه AI؟
+  aiReasoning   String?  // شرح AI لاختيار هذا الحل
+  status        String   @default("pending") // pending | executing | success | failed | skipped
+  output        String?  // مخرجات التنفيذ
+  executedAt    DateTime?
+  durationMs    Int      @default(0)
+  costSavedUsd  Float    @default(0.0)
+  createdAt     DateTime @default(now())
+
+  @@index([incidentId])
+  @@index([status])
+}
+
+// إحصائيات يومية لـ AIOps
+model AiopsDailyStat {
+  id              String   @id @default(cuid())
+  date            String
+  totalChecks     Int      @default(0)
+  incidentsDetected Int    @default(0)
+  incidentsResolved Int     @default(0)
+  autoHealed      Int      @default(0)
+  avgUptimePct    Float    @default(100.0)
+  avgResponseMs   Int      @default(0)
+  totalDowntimeSec Int     @default(0)
+  costSavedUsd    Float    @default(0.0)
+  costImpactUsd   Float    @default(0.0)
+
+  @@unique([date])
+  @@index([date])
+}
+
+// ============================================================
+// Omni-Sales ZeroBaran | الوكيل التجاري وخدمة العملاء الذاتي
+// Omnichannel AI Sales Agent + RAG + Conversation Management
+// ============================================================
+
+// جدول المحادثات (Conversations)
+model Conversation {
+  id            String   @id @default(cuid())
+  channel       String   // telegram | whatsapp | email | web | instagram
+  customerName  String
+  customerEmail String?
+  customerPhone String?
+  customerId    String?
+  subject       String?
+  status        String   @default("active") // active | waiting_human | closed | abandoned
+  intent        String?  // sales | support | pricing | complaint | booking | info
+  sentiment     String   @default("neutral") // positive | neutral | negative | mixed
+  satisfactionScore Int @default(0) // 0-100
+  productInterest String? // المنتج/الخدمة التي يهتم بها
+  leadScore     Int      @default(50) // 0-100
+  escalated     Boolean  @default(false) // هل تم تحويلها لموظف بشري؟
+  escalatedAt   DateTime?
+  closedAt      DateTime?
+  totalMessages Int      @default(0)
+  aiHandled     Boolean  @default(true)
+  responseTimeMs Int     @default(0) // متوسط زمن الاستجابة
+  conversionValue Float @default(0.0) // قيمة الطلب إن تم
+  converted     Boolean  @default(false) // هل تحوّل لعملية بيع؟
+  startedAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  messages      ChatMessage[]
+
+  @@index([status])
+  @@index([channel])
+  @@index([intent])
+  @@index([createdAt])
+}
+
+// جدول رسائل المحادثة (Chat Messages)
+model ChatMessage {
+  id              String   @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role            String   // customer | agent | system
+  content         String
+  type            String   @default("text") // text | image | product_card | payment_link | booking
+  tokens          Int      @default(0)
+  aiModel         String?  // gemini | groq | human
+  ragSources      String?  // JSON array of KB item IDs used
+  sentiment       String   @default("neutral")
+  confidence      Int      @default(0) // 0-100 (AI confidence)
+  metadata        String?  // JSON: {product_id, price, etc.}
+  createdAt       DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([role])
+  @@index([createdAt])
+}
+
+// جدول قاعدة المعرفة / كتالوج المنتجات (Knowledge Base for RAG)
+model KnowledgeBase {
+  id            String   @id @default(cuid())
+  title         String
+  category      String   // product | service | faq | policy | pricing | tutorial
+  content       String   // النص الكامل للوثيقة
+  tags          String?  // JSON array
+  price         Float?
+  currency      String   @default("USD")
+  sku           String?
+  stock         Int      @default(-1) // -1 = غير محدود
+  imageUrl      String?
+  searchCount   Int      @default(0)
+  lastUsedAt    DateTime?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([category])
+  @@index([active])
+}
+
+// إحصائيات يومية للمبيعات
+model SalesDailyStat {
+  id              String   @id @default(cuid())
+  date            String
+  totalConversations Int   @default(0)
+  aiHandled      Int      @default(0)
+  humanEscalated Int      @default(0)
+  resolvedConvos Int      @default(0)
+  converted      Int      @default(0) // محادثات تحوّلت لمبيعات
+  totalRevenueUsd Float   @default(0.0)
+  avgSatisfaction Float  @default(0.0)
+  avgResponseMs  Int      @default(0)
+  totalMessages  Int      @default(0)
+  costSavedUsd    Float    @default(0.0)
+
+  @@unique([date])
+  @@index([date])
+}

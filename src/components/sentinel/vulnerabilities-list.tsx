@@ -94,7 +94,23 @@ export function VulnerabilitiesList() {
   };
 
   useEffect(() => {
-    load();
+    let active = true;
+    const params = new URLSearchParams();
+    if (filterSeverity !== "all") params.set("severity", filterSeverity);
+    if (filterStatus !== "all") params.set("status", filterStatus);
+    fetch(`/api/vulnerabilities?${params.toString()}&limit=100`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!active) return;
+        setVulns(d.vulnerabilities || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [filterSeverity, filterStatus]);
 
   const updateStatus = async (id: string, newStatus: string) => {

@@ -1,0 +1,176 @@
+# ============================================================
+# Omni-Sales ZeroBaran | GitHub Actions Workflow
+# الوكيل التجاري الذاتي: RAG Search + AI Agent + Telegram
+# ============================================================
+name: "💬 Omni-Sales ZeroBaran Agent"
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_message:
+        description: "رسالة اختبارية للوكيل التجاري"
+        default: "كم سعر باقة الأمان السيبراني؟"
+      conversation_id:
+        description: "معرّف المحادثة (يدوياً)"
+        default: "test-conv-001"
+      tone:
+        description: "أسلوب الرد"
+        type: choice
+        options:
+          - professional
+          - friendly
+          - formal
+          - casual
+        default: professional
+      send_telegram:
+        description: "إرسال الرد عبر تليجرام"
+        type: boolean
+        default: true
+
+  schedule:
+    # كل 10 دقائق — يفحص الرسائل المعلّقة ويرد عليها
+    - cron: "*/10 * * * *"
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  OMNI_GEMINI_API_KEY: ${{ secrets.OMNI_GEMINI_API_KEY }}
+  OMNI_GROQ_API_KEY: ${{ secrets.OMNI_GROQ_API_KEY }}
+  OMNI_TELEGRAM_BOT_TOKEN: ${{ secrets.OMNI_TELEGRAM_BOT_TOKEN }}
+  OMNI_TELEGRAM_CHAT_ID: ${{ secrets.OMNI_TELEGRAM_CHAT_ID }}
+  OMNI_SUPABASE_URL: ${{ secrets.OMNI_SUPABASE_URL }}
+  OMNI_SUPABASE_ANON_KEY: ${{ secrets.OMNI_SUPABASE_ANON_KEY }}
+
+jobs:
+  sales-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "📦 Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scanner/sales/requirements.txt
+
+      - name: "📁 Setup Workspace"
+        run: mkdir -p sales_out
+
+      # ============================================================
+      # 1. RAG Search: ابحث في قاعدة المعرفة عن استفسار العميل
+      # ============================================================
+      - name: "🔍 RAG Knowledge Search"
+        run: |
+          MESSAGE="${{ github.event.inputs.test_message || 'كم سعر الباقة؟' }}"
+          python scanner/sales/rag_search.py \
+            --query="$MESSAGE" \
+            --limit=3 \
+            --output=sales_out/rag_results.json 2>/dev/null || true
+          echo "RAG search completed. Results:"
+          cat sales_out/rag_results.json || echo "(no results)"
+        continue-on-error: true
+
+      # ============================================================
+      # 2. AI Agent: ولّد رداً تجارياً احترافياً
+      # ============================================================
+      - name: "🤖 Generate AI Sales Response"
+        if: env.GEMINI_API_KEY != '' || env.OMNI_GEMINI_API_KEY != '' || env.GROQ_API_KEY != ''
+        run: |
+          MESSAGE="${{ github.event.inputs.test_message || 'كم سعر الباقة؟' }}"
+          CONV_ID="${{ github.event.inputs.conversation_id || 'cron-conv-'$(date +%s) }}"
+          TONE="${{ github.event.inputs.tone || 'professional' }}"
+          python scanner/sales/ai_agent.py \
+            --message="$MESSAGE" \
+            --conversation-id="$CONV_ID" \
+            --kb-context=sales_out/rag_results.json \
+            --tone="$TONE" \
+            --output=sales_out/ai_response.json 2>/dev/null || true
+          echo "AI response:"
+          cat sales_out/ai_response.json || echo "(no response)"
+        continue-on-error: true
+
+      # ============================================================
+      # 3. Telegram: أرسل الرد للعميل + إشعار للأدمن
+      # ============================================================
+      - name: "📨 Send via Telegram"
+        if: github.event.inputs.send_telegram == 'true' && env.OMNI_TELEGRAM_BOT_TOKEN != '' && env.OMNI_TELEGRAM_CHAT_ID != ''
+        run: |
+          if [ -f "sales_out/ai_response.json" ]; then
+            RESPONSE=$(python3 -c "import json; d=json.load(open('sales_out/ai_response.json')); print(d.get('response',''))" 2>/dev/null || echo "")
+            CONFIDENCE=$(python3 -c "import json; d=json.load(open('sales_out/ai_response.json')); print(d.get('confidence',85))" 2>/dev/null || echo "85")
+            INTENT=$(python3 -c "import json; d=json.load(open('sales_out/ai_response.json')); print(d.get('intent','support'))" 2>/dev/null || echo "support")
+            ESCALATE=$(python3 -c "import json; d=json.load(open('sales_out/ai_response.json')); print(d.get('should_escalate',False))" 2>/dev/null || echo "False")
+            if [ -n "$RESPONSE" ]; then
+              python scanner/sales/telegram_handler.py \
+                --chat-id="${{ env.OMNI_TELEGRAM_CHAT_ID }}" \
+                --message="$RESPONSE" \
+                --type=response \
+                --customer-name="عميل" \
+                --confidence="$CONFIDENCE" \
+                --intent="$INTENT" 2>/dev/null || true
+            fi
+            if [ "$ESCALATE" = "True" ]; then
+              python scanner/sales/telegram_handler.py \
+                --chat-id="${{ env.OMNI_TELEGRAM_CHAT_ID }}" \
+                --type=escalation \
+                --message="$MESSAGE" \
+                --reason="اكتشاف AI: شكوى/طلب موظف" \
+                --customer-name="عميل" \
+                --conversation-id="$CONV_ID" 2>/dev/null || true
+            fi
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 4. Upload Artifacts
+      # ============================================================
+      - name: "📤 Upload Results"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: omni-sales-${{ github.run_id }}
+          path: |
+            sales_out/
+          retention-days: 30
+
+      # ============================================================
+      # 5. Summary
+      # ============================================================
+      - name: "✅ Summary"
+        if: always()
+        run: |
+          echo "### 💬 Omni-Sales ZeroBaran — تقرير الوكيل التجاري" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**الرسالة:** \`${{ github.event.inputs.test_message || 'cron check' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**الأسلوب:** \`${{ github.event.inputs.tone || 'professional' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "sales_out/rag_results.json" ]; then
+            echo "**نتائج RAG:** \`${{ github.run_id }}\`" >> $GITHUB_STEP_SUMMARY
+            python3 -c "
+          import json
+          d = json.load(open('sales_out/rag_results.json'))
+          print(f'عُثر على {d.get(\"count\",0)} نتيجة')
+          for r in d.get('results',[])[:3]:
+              print(f'- {r[\"title\"]} (score: {r[\"score\"]})')
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi
+          if [ -f "sales_out/ai_response.json" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            python3 -c "
+          import json
+          d = json.load(open('sales_out/ai_response.json'))
+          print(f'**النية:** {d.get(\"intent\",\"—\")}')
+          print(f'**الثقة:** {d.get(\"confidence\",0)}%')
+          print(f'**المشاعر:** {d.get(\"sentiment\",\"—\")}')
+          print(f'**تحويل:** {d.get(\"should_escalate\",False)}')
+          print(f'**النموذج:** {d.get(\"model\",\"—\")}')
+          print(f'**RAG:** {d.get(\"rag_used\",[])}')
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi

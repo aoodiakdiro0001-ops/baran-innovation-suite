@@ -17,7 +17,6 @@ import {
   Github,
   Sparkles,
   ChevronLeft,
-  Mail,
   Phone,
   User,
   Bitcoin,
@@ -25,10 +24,25 @@ import {
   Coins,
   Gift,
   Image as ImageIcon,
-  Wand2,
   ArrowRight,
   Layers,
   DollarSign,
+  Search,
+  TrendingUp,
+  PenLine,
+  Users,
+  Database,
+  AlertTriangle,
+  Lightbulb,
+  Box,
+  Server,
+  Target,
+  Send,
+  Reply,
+  Trophy,
+  Mail,
+  Wrench,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +69,67 @@ import { ResultsGallery } from "@/components/pixel/results-gallery";
 import { PixelArchitectureDocs } from "@/components/pixel/pixel-architecture-docs";
 import { PixelSettingsPanel } from "@/components/pixel/pixel-settings-panel";
 
-type ProjectKey = "cyber" | "pixel";
+// SEO-GhostBaran components
+import { SeoStatsGrid } from "@/components/seo/seo-stats-grid";
+import { SeoChartsGrid } from "@/components/seo/seo-charts-grid";
+import { KeywordTracker } from "@/components/seo/keyword-tracker";
+import { ContentGenerator } from "@/components/seo/content-generator";
+import { CompetitorsList } from "@/components/seo/competitors-list";
+import { SeoArchitectureDocs } from "@/components/seo/seo-architecture-docs";
+import { SeoSettingsPanel } from "@/components/seo/seo-settings-panel";
+
+// Data-Nexus ZeroBaran components
+import { DataStatsGrid } from "@/components/data/data-stats-grid";
+import { DataChartsGrid } from "@/components/data/data-charts-grid";
+import { DatasetUploader } from "@/components/data/dataset-uploader";
+import { DatasetsList } from "@/components/data/datasets-list";
+import { InsightsList } from "@/components/data/insights-list";
+import { AnomaliesList } from "@/components/data/anomalies-list";
+import { DataArchitectureDocs } from "@/components/data/data-architecture-docs";
+import { DataSettingsPanel } from "@/components/data/data-settings-panel";
+
+// Spatial-ZeroBaran components
+import { SpatialStatsGrid } from "@/components/spatial/spatial-stats-grid";
+import { SpatialChartsGrid } from "@/components/spatial/spatial-charts-grid";
+import { AssetGenerator } from "@/components/spatial/asset-generator";
+import { AssetsGallery } from "@/components/spatial/assets-gallery";
+import { SpatialArchitectureDocs } from "@/components/spatial/spatial-architecture-docs";
+import { SpatialSettingsPanel } from "@/components/spatial/spatial-settings-panel";
+
+// Lead-Sniper ZeroBaran components
+import { LeadStatsGrid } from "@/components/leads/lead-stats-grid";
+import { LeadChartsGrid } from "@/components/leads/lead-charts-grid";
+import { LeadScraperConfig } from "@/components/leads/lead-scraper-config";
+import { PipelineView } from "@/components/leads/pipeline-view";
+import { OutreachList } from "@/components/leads/outreach-list";
+import { LeadArchitectureDocs } from "@/components/leads/lead-architecture-docs";
+import { LeadSettingsPanel } from "@/components/leads/lead-settings-panel";
+
+// AIOps-ZeroBaran components
+import { AiopsStatsGrid } from "@/components/aiops/aiops-stats-grid";
+import { AiopsChartsGrid } from "@/components/aiops/aiops-charts-grid";
+import { ServiceList } from "@/components/aiops/service-list";
+import { IncidentList } from "@/components/aiops/incident-list";
+import { AiopsArchitectureDocs } from "@/components/aiops/aiops-architecture-docs";
+import { AiopsSettingsPanel } from "@/components/aiops/aiops-settings-panel";
+
+// Omni-Sales ZeroBaran components
+import { SalesStatsGrid } from "@/components/sales/sales-stats-grid";
+import { SalesChartsGrid } from "@/components/sales/sales-charts-grid";
+import { ConversationList } from "@/components/sales/conversation-list";
+import { KnowledgeBaseList } from "@/components/sales/knowledge-base-list";
+import { SalesArchitectureDocs } from "@/components/sales/sales-architecture-docs";
+import { SalesSettingsPanel } from "@/components/sales/sales-settings-panel";
+
+type ProjectKey = "cyber" | "pixel" | "seo" | "data" | "spatial" | "leads" | "aiops" | "omni";
 type CyberTab = "overview" | "scans" | "vulnerabilities" | "alerts" | "support" | "settings" | "docs";
 type PixelTab = "overview" | "upload" | "jobs" | "gallery" | "settings" | "docs";
+type SeoTab = "overview" | "keywords" | "content" | "competitors" | "settings" | "docs";
+type DataTab = "overview" | "datasets" | "insights" | "anomalies" | "settings" | "docs";
+type SpatialTab = "overview" | "generate" | "gallery" | "settings" | "docs";
+type LeadsTab = "overview" | "scraper" | "pipeline" | "outreaches" | "settings" | "docs";
+type AiopsTab = "overview" | "services" | "incidents" | "settings" | "docs";
+type OmniTab = "overview" | "conversations" | "knowledge" | "settings" | "docs";
 
 const cyberTabs: { key: CyberTab; label: string; icon: typeof Activity }[] = [
   { key: "overview", label: "نظرة عامة", icon: Activity },
@@ -78,10 +150,67 @@ const pixelTabs: { key: PixelTab; label: string; icon: typeof Activity }[] = [
   { key: "docs", label: "التوثيق", icon: BookOpen },
 ];
 
+const seoTabs: { key: SeoTab; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "نظرة عامة", icon: Activity },
+  { key: "keywords", label: "الكلمات المفتاحية", icon: Search },
+  { key: "content", label: "محرّر المحتوى", icon: PenLine },
+  { key: "competitors", label: "المنافسون", icon: Users },
+  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "docs", label: "التوثيق", icon: BookOpen },
+];
+
+const dataTabs: { key: DataTab; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "نظرة عامة", icon: Activity },
+  { key: "datasets", label: "مصادر البيانات", icon: Database },
+  { key: "insights", label: "رؤى AI", icon: Brain },
+  { key: "anomalies", label: "الشذوذ", icon: AlertTriangle },
+  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "docs", label: "التوثيق", icon: BookOpen },
+];
+
+const spatialTabs: { key: SpatialTab; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "نظرة عامة", icon: Activity },
+  { key: "generate", label: "توليد مجسم", icon: Box },
+  { key: "gallery", label: "المعرض", icon: Sparkles },
+  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "docs", label: "التوثيق", icon: BookOpen },
+];
+
+const leadsTabs: { key: LeadsTab; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "نظرة عامة", icon: Activity },
+  { key: "scraper", label: "صيد عملاء", icon: Target },
+  { key: "pipeline", label: "خط المبيعات", icon: Users },
+  { key: "outreaches", label: "الرسائل", icon: Mail },
+  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "docs", label: "التوثيق", icon: BookOpen },
+];
+
+const aiopsTabs: { key: AiopsTab; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "نظرة عامة", icon: Activity },
+  { key: "services", label: "الخدمات", icon: Server },
+  { key: "incidents", label: "الحوادث", icon: AlertTriangle },
+  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "docs", label: "التوثيق", icon: BookOpen },
+];
+
+const omniTabs: { key: OmniTab; label: string; icon: typeof Activity }[] = [
+  { key: "overview", label: "نظرة عامة", icon: Activity },
+  { key: "conversations", label: "المحادثات", icon: MessageSquare },
+  { key: "knowledge", label: "قاعدة المعرفة", icon: BookOpen },
+  { key: "settings", label: "الإعدادات", icon: Settings },
+  { key: "docs", label: "التوثيق", icon: BookOpen },
+];
+
 export default function Home() {
   const [project, setProject] = useState<ProjectKey | null>(null);
   const [cyberTab, setCyberTab] = useState<CyberTab>("overview");
   const [pixelTab, setPixelTab] = useState<PixelTab>("overview");
+  const [seoTab, setSeoTab] = useState<SeoTab>("overview");
+  const [dataTab, setDataTab] = useState<DataTab>("overview");
+  const [spatialTab, setSpatialTab] = useState<SpatialTab>("overview");
+  const [leadsTab, setLeadsTab] = useState<LeadsTab>("overview");
+  const [aiopsTab, setAiopsTab] = useState<AiopsTab>("overview");
+  const [omniTab, setOmniTab] = useState<OmniTab>("overview");
 
   return (
     <div className="min-h-screen flex flex-col bg-background cyber-grid-bg">
@@ -110,15 +239,39 @@ export default function Home() {
               <div className={`relative p-2 rounded-lg text-white cyber-glow bg-gradient-to-br ${
                 project === "pixel"
                   ? "from-fuchsia-500 to-purple-600"
+                  : project === "seo"
+                  ? "from-emerald-500 to-teal-600"
+                  : project === "data"
+                  ? "from-amber-500 to-orange-600"
+                  : project === "spatial"
+                  ? "from-violet-500 to-purple-600"
+                  : project === "leads"
+                  ? "from-rose-500 to-pink-600"
+                  : project === "aiops"
+                  ? "from-blue-500 to-cyan-600"
+                  : project === "omni"
+                  ? "from-indigo-500 to-blue-600"
                   : "from-cyan-500 to-blue-600"
               }`}>
-                {project === "pixel" ? <ImageIcon className="h-6 w-6" /> : <Shield className="h-6 w-6" />}
+                {project === "pixel" ? <ImageIcon className="h-6 w-6" /> : project === "seo" ? <TrendingUp className="h-6 w-6" /> : project === "data" ? <Database className="h-6 w-6" /> : project === "spatial" ? <Box className="h-6 w-6" /> : project === "leads" ? <Target className="h-6 w-6" /> : project === "aiops" ? <Server className="h-6 w-6" /> : project === "omni" ? <MessageSquare className="h-6 w-6" /> : <Shield className="h-6 w-6" />}
               </div>
             </motion.div>
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-bold tracking-tight cyber-text-glow truncate">
                 {project === "pixel"
                   ? "Pixel-ZeroBaran"
+                  : project === "seo"
+                  ? "SEO-GhostBaran"
+                  : project === "data"
+                  ? "Data-Nexus ZeroBaran"
+                  : project === "spatial"
+                  ? "Spatial-ZeroBaran"
+                  : project === "leads"
+                  ? "Lead-Sniper ZeroBaran"
+                  : project === "aiops"
+                  ? "AIOps-ZeroBaran"
+                  : project === "omni"
+                  ? "Omni-Sales ZeroBaran"
                   : project === "cyber"
                   ? "Cyber-SentinelBaran"
                   : "Baran Innovation Suite"}
@@ -126,6 +279,18 @@ export default function Home() {
               <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 {project === "pixel"
                   ? "استوديو تعديل ومعالجة الصور والتصميم الذاتي اللامركزي"
+                  : project === "seo"
+                  ? "منظومة الرصد والتجسس التسويقي ومحرك تحسين الظهور الذاتي"
+                  : project === "data"
+                  ? "منظومة تحليل وهندسة البيانات الذاتية واللامركزية"
+                  : project === "spatial"
+                  ? "الاستوديو الذاتي لتوليد ومعالجة المجسمات ثلاثية الأبعاد"
+                  : project === "leads"
+                  ? "المنظومة الذاتية لصيد العملاء والتسويق البارد اللامركزي"
+                  : project === "aiops"
+                  ? "المهندس الرقمي الذاتي لإدارة واستعادة الخوادم"
+                  : project === "omni"
+                  ? "الوكيل التجاري وخدمة العملاء الذاتي واللامركزي"
                   : project === "cyber"
                   ? "منظومة الفحص الأمني واختبار الاختراق والحماية الذاتية اللامركزية"
                   : "اختر المشروع للبدء — كل مشروع بموارد مجانية بالكامل"}
@@ -137,7 +302,7 @@ export default function Home() {
             {project === null ? (
               <Badge variant="outline" className="text-[10px]">
                 <Sparkles className="h-3 w-3 ml-1 text-cyan-500" />
-                2 مشاريع
+                8 مشاريع
               </Badge>
             ) : (
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
@@ -162,6 +327,24 @@ export default function Home() {
           {project === "pixel" && (
             <TabsBar tabs={pixelTabs} active={pixelTab} onChange={(k) => setPixelTab(k as PixelTab)} accent="fuchsia" />
           )}
+          {project === "seo" && (
+            <TabsBar tabs={seoTabs} active={seoTab} onChange={(k) => setSeoTab(k as SeoTab)} accent="emerald" />
+          )}
+          {project === "data" && (
+            <TabsBar tabs={dataTabs} active={dataTab} onChange={(k) => setDataTab(k as DataTab)} accent="amber" />
+          )}
+          {project === "spatial" && (
+            <TabsBar tabs={spatialTabs} active={spatialTab} onChange={(k) => setSpatialTab(k as SpatialTab)} accent="violet" />
+          )}
+          {project === "leads" && (
+            <TabsBar tabs={leadsTabs} active={leadsTab} onChange={(k) => setLeadsTab(k as LeadsTab)} accent="rose" />
+          )}
+          {project === "aiops" && (
+            <TabsBar tabs={aiopsTabs} active={aiopsTab} onChange={(k) => setAiopsTab(k as AiopsTab)} accent="blue" />
+          )}
+          {project === "omni" && (
+            <TabsBar tabs={omniTabs} active={omniTab} onChange={(k) => setOmniTab(k as OmniTab)} accent="indigo" />
+          )}
         </AnimatePresence>
       </header>
 
@@ -171,7 +354,7 @@ export default function Home() {
           <ProjectLauncher onPick={setProject} />
         ) : (
           <motion.div
-            key={`${project}-${project === "cyber" ? cyberTab : pixelTab}`}
+            key={`${project}-${project === "cyber" ? cyberTab : project === "pixel" ? pixelTab : project === "seo" ? seoTab : project === "data" ? dataTab : project === "spatial" ? spatialTab : project === "leads" ? leadsTab : project === "omni" ? omniTab : aiopsTab}`}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -179,6 +362,12 @@ export default function Home() {
           >
             {project === "cyber" && <CyberContent tab={cyberTab} />}
             {project === "pixel" && <PixelContent tab={pixelTab} />}
+            {project === "seo" && <SeoContent tab={seoTab} />}
+            {project === "data" && <DataContent tab={dataTab} />}
+            {project === "spatial" && <SpatialContent tab={spatialTab} />}
+            {project === "leads" && <LeadsContent tab={leadsTab} />}
+            {project === "aiops" && <AIOpsContent tab={aiopsTab} />}
+            {project === "omni" && <OmniContent tab={omniTab} />}
           </motion.div>
         )}
       </main>
@@ -197,8 +386,26 @@ function TabsBar({
   tabs: { key: string; label: string; icon: typeof Activity }[];
   active: string;
   onChange: (k: string) => void;
-  accent: "cyan" | "fuchsia";
+  accent: "cyan" | "fuchsia" | "emerald" | "amber" | "violet" | "rose" | "sky" | "blue" | "indigo";
 }) {
+  const accentText = accent === "fuchsia" ? "text-fuchsia-600 dark:text-fuchsia-400"
+    : accent === "emerald" ? "text-emerald-600 dark:text-emerald-400"
+    : accent === "amber" ? "text-amber-600 dark:text-amber-400"
+    : accent === "violet" ? "text-violet-600 dark:text-violet-400"
+    : accent === "rose" ? "text-rose-600 dark:text-rose-400"
+    : accent === "sky" ? "text-sky-600 dark:text-sky-400"
+    : accent === "blue" ? "text-blue-600 dark:text-blue-400"
+    : accent === "indigo" ? "text-indigo-600 dark:text-indigo-400"
+    : "text-cyan-600 dark:text-cyan-400";
+  const accentBg = accent === "fuchsia" ? "bg-fuchsia-500/10 border-b-2 border-fuchsia-500"
+    : accent === "emerald" ? "bg-emerald-500/10 border-b-2 border-emerald-500"
+    : accent === "amber" ? "bg-amber-500/10 border-b-2 border-amber-500"
+    : accent === "violet" ? "bg-violet-500/10 border-b-2 border-violet-500"
+    : accent === "rose" ? "bg-rose-500/10 border-b-2 border-rose-500"
+    : accent === "sky" ? "bg-sky-500/10 border-b-2 border-sky-500"
+    : accent === "blue" ? "bg-blue-500/10 border-b-2 border-blue-500"
+    : accent === "indigo" ? "bg-indigo-500/10 border-b-2 border-indigo-500"
+    : "bg-cyan-500/10 border-b-2 border-cyan-500";
   return (
     <div className="container mx-auto max-w-7xl px-4 pb-3 -mt-1 overflow-x-auto custom-scroll">
       <div className="flex items-center gap-1 min-w-max">
@@ -210,11 +417,7 @@ function TabsBar({
               key={tab.key}
               onClick={() => onChange(tab.key)}
               className={`relative inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors rounded-md ${
-                isActive
-                  ? accent === "fuchsia"
-                    ? "text-fuchsia-600 dark:text-fuchsia-400"
-                    : "text-cyan-600 dark:text-cyan-400"
-                  : "text-muted-foreground hover:text-foreground"
+                isActive ? accentText : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -222,11 +425,7 @@ function TabsBar({
               {isActive && (
                 <motion.div
                   layoutId={`active-tab-${accent}`}
-                  className={`absolute inset-0 rounded-md -z-10 ${
-                    accent === "fuchsia"
-                      ? "bg-fuchsia-500/10 border-b-2 border-fuchsia-500"
-                      : "bg-cyan-500/10 border-b-2 border-cyan-500"
-                  }`}
+                  className={`absolute inset-0 rounded-md -z-10 ${accentBg}`}
                 />
               )}
             </button>
@@ -279,6 +478,126 @@ function ProjectLauncher({ onPick }: { onPick: (p: ProjectKey) => void }) {
       ],
       number: "#13",
     },
+    {
+      key: "seo" as ProjectKey,
+      title: "SEO-GhostBaran",
+      tagline: "منظومة الرصد والتجسس التسويقي",
+      desc: "تتبع ترتيب الكلمات المفتاحية، تحليل محتوى المنافسين، وكشف الفجوات + توليد مقالات وصفحات هبوط SEO-Optimized جاهزة للنشر ليتصدّر موقعك نتائج البحث.",
+      gradient: "from-emerald-500 to-teal-600",
+      glow: "cyber-glow",
+      icon: TrendingUp,
+      features: [
+        { icon: Search, label: "رصد يومي" },
+        { icon: Brain, label: "AI يولّد محتوى" },
+        { icon: TrendingUp, label: "تصدّر نتائج البحث" },
+      ],
+      stats: [
+        { label: "كلمات مُتتبَّعة", value: "20" },
+        { label: "منافسون", value: "6" },
+        { label: "مقالات AI", value: "6" },
+      ],
+      number: "#12",
+    },
+    {
+      key: "data" as ProjectKey,
+      title: "Data-Nexus ZeroBaran",
+      tagline: "منظومة تحليل وهندسة البيانات",
+      desc: "جمع وتنظيف وتحليل قواعد البيانات الضخمة (CSV, JSON, SQL, APIs) تلقائياً. كشف الشذوذ، تنبؤ بالاتجاهات، وتوصيات AI عملية — دون Tableau أو Power BI.",
+      gradient: "from-amber-500 to-orange-600",
+      glow: "cyber-glow",
+      icon: Database,
+      features: [
+        { icon: Database, label: "ETL تلقائي" },
+        { icon: Brain, label: "AI تحليل تنبؤي" },
+        { icon: AlertTriangle, label: "كشف الشذوذ" },
+      ],
+      stats: [
+        { label: "مصادر بيانات", value: "8" },
+        { label: "رؤى AI", value: "8" },
+        { label: "شذوذ مكتشَف", value: "7" },
+      ],
+      number: "#11",
+    },
+    {
+      key: "spatial" as ProjectKey,
+      title: "Spatial-ZeroBaran",
+      tagline: "استوديو المجسمات ثلاثية الأبعاد",
+      desc: "تحويل النصوص أو الصور 2D إلى مجسمات 3D جاهزة لـ Unity/Unreal/Blender. أتمتة Decimation + UV Mapping + Texturing — دون شراء أصول مكلفة.",
+      gradient: "from-violet-500 to-purple-600",
+      glow: "cyber-glow",
+      icon: Box,
+      features: [
+        { icon: Box, label: "توليد 3D فوري" },
+        { icon: Layers, label: "Decimation آلي" },
+        { icon: Sparkles, label: "Textures + UV" },
+      ],
+      stats: [
+        { label: "مجسمات مُولَّدة", value: "12" },
+        { label: "مضلعات مُقلَّصة", value: "1.4M" },
+        { label: "توفير $", value: "2K+" },
+      ],
+      number: "#10",
+    },
+    {
+      key: "leads" as ProjectKey,
+      title: "Lead-Sniper ZeroBaran",
+      tagline: "صيد العملاء والتسويق البارد",
+      desc: "اكتشاف العملاء المحتملين آلياً، تحليل بياناتهم، توليد رسائل تواصل باردة شديدة التخصيص بـ AI، وإدارة خط المبيعات — دون Apollo أو Outreach.io.",
+      gradient: "from-rose-500 to-pink-600",
+      glow: "cyber-glow",
+      icon: Target,
+      features: [
+        { icon: Target, label: "صيد آلي" },
+        { icon: Brain, label: "AI تخصيص رسائل" },
+        { icon: Trophy, label: "إدارة Pipeline" },
+      ],
+      stats: [
+        { label: "عملاء محتملون", value: "22" },
+        { label: "رسائل AI", value: "10" },
+        { label: "صفقات مغلقة", value: "2" },
+      ],
+      number: "#9",
+    },
+    {
+      key: "aiops" as ProjectKey,
+      title: "AIOps-ZeroBaran",
+      tagline: "المهندس الرقمي الذاتي للخوادم",
+      desc: "مراقبة صحة الخوادم 24/7، اكتشاف الأعطال، تشخيص بالذكاء الاصطناعي، وإصلاح ذاتي تلقائي (Self-Healing) — دون Datadog أو New Relic.",
+      gradient: "from-blue-500 to-cyan-600",
+      glow: "cyber-glow",
+      icon: Server,
+      features: [
+        { icon: Activity, label: "رصد 24/7" },
+        { icon: Brain, label: "AI تشخيص" },
+        { icon: Wrench, label: "إصلاح ذاتي" },
+      ],
+      stats: [
+        { label: "خدمات مراقَبة", value: "10" },
+        { label: "حوادث", value: "7" },
+        { label: "إصلاح آلي", value: "8" },
+      ],
+      number: "#8",
+    },
+    {
+      key: "omni" as ProjectKey,
+      title: "Omni-Sales ZeroBaran",
+      tagline: "الوكيل التجاري وخدمة العملاء",
+      desc: "رد آلي 24/7 على استفسارات العملاء عبر تليجرام وواتساب والإيميل. فهم نية العميل، إجابة بـ RAG من كتالوج منتجاتك، التعامل مع الاعتراضات، وإرسال تفاصيل الدفع — دون Intercom أو Zendesk.",
+      gradient: "from-indigo-500 to-blue-600",
+      glow: "cyber-glow",
+      icon: MessageSquare,
+      features: [
+        { icon: MessageSquare, label: "رد فوري 24/7" },
+        { icon: Brain, label: "AI + RAG" },
+        { icon: ShoppingBag, label: "إغلاق المبيعات" },
+      ],
+      stats: [
+        { label: "محادثات", value: "10" },
+        { label: "مبيعات", value: "5" },
+        { label: "إيرادات", value: "$4.2K" },
+      ],
+      number: "#7",
+    },
   ];
 
   return (
@@ -303,15 +622,15 @@ function ProjectLauncher({ onPick }: { onPick: (p: ProjectKey) => void }) {
             Baran Innovation Suite — منصة المشاريع الذكية اللامركزية
           </Badge>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-            درع سيبراني واستوديو تصوير
+            أمان، تصوير، تسويق، بيانات، 3D، عملاء، وصيانة و DevOps ودعم عملاء
             <br />
-            <span className="bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-purple-500 bg-clip-text text-transparent">
-              بلا تكلفة — في مكان واحد
+            <span className="bg-gradient-to-r from-cyan-500 via-fuchsia-500 via-amber-500 to-blue-500 bg-clip-text text-transparent">
+              ثمانية منظومات ذكية — بلا تكلفة
             </span>
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            مشروعان مبتكران بُنيا بموارد مجانية بالكامل — اختر المشروع الذي تريده للبدء.
-            كلاهما يعمل بالكامل محلياً مع سيادة وخصوصية تامة على بياناتك.
+            ثمانية مشاريع مبتكرة بُنيت بموارد مجانية بالكامل — اختر المشروع الذي تريده للبدء.
+            كلها تعمل بالكامل محلياً مع سيادة وخصوصية تامة على بياناتك.
           </p>
           <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground pt-2">
             <span className="flex items-center gap-1.5">
@@ -331,7 +650,7 @@ function ProjectLauncher({ onPick }: { onPick: (p: ProjectKey) => void }) {
       </motion.section>
 
       {/* Project Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-8 gap-4">
         {projects.map((p, idx) => {
           const Icon = p.icon;
           return (
@@ -339,9 +658,9 @@ function ProjectLauncher({ onPick }: { onPick: (p: ProjectKey) => void }) {
               key={p.key}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + idx * 0.15, duration: 0.4 }}
+              transition={{ delay: 0.1 + idx * 0.12, duration: 0.4 }}
               whileHover={{ y: -4 }}
-              className={`group cursor-pointer rounded-2xl border border-border bg-card/50 backdrop-blur overflow-hidden transition-all hover:border-${p.gradient.split("-")[1]}-500/40 ${p.glow}`}
+              className={`group cursor-pointer rounded-2xl border border-border bg-card/50 backdrop-blur overflow-hidden transition-all hover:border-blue-500/40 ${p.glow}`}
               onClick={() => onPick(p.key)}
             >
               {/* Header with gradient */}
@@ -478,6 +797,178 @@ function PixelContent({ tab }: { tab: PixelTab }) {
   );
 }
 
+function SeoContent({ tab }: { tab: SeoTab }) {
+  return (
+    <>
+      {tab === "overview" && (
+        <>
+          <SeoStatsGrid />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <SeoChartsGrid />
+            </div>
+            <div className="space-y-4">
+              <CompetitorsList />
+            </div>
+          </div>
+          <KeywordTracker />
+        </>
+      )}
+      {tab === "keywords" && <KeywordTracker />}
+      {tab === "content" && <ContentGenerator />}
+      {tab === "competitors" && <CompetitorsList />}
+      {tab === "settings" && <SeoSettingsPanel />}
+      {tab === "docs" && <SeoArchitectureDocs />}
+    </>
+  );
+}
+
+function DataContent({ tab }: { tab: DataTab }) {
+  return (
+    <>
+      {tab === "overview" && (
+        <>
+          <DataStatsGrid />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <DataChartsGrid />
+            </div>
+            <div className="space-y-4">
+              <AnomaliesList />
+            </div>
+          </div>
+          <DatasetsList />
+        </>
+      )}
+      {tab === "datasets" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-1">
+            <DatasetUploader />
+          </div>
+          <div className="lg:col-span-2">
+            <DatasetsList />
+          </div>
+        </div>
+      )}
+      {tab === "insights" && <InsightsList />}
+      {tab === "anomalies" && <AnomaliesList />}
+      {tab === "settings" && <DataSettingsPanel />}
+      {tab === "docs" && <DataArchitectureDocs />}
+    </>
+  );
+}
+
+function SpatialContent({ tab }: { tab: SpatialTab }) {
+  return (
+    <>
+      {tab === "overview" && (
+        <>
+          <SpatialStatsGrid />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <SpatialChartsGrid />
+            </div>
+            <div className="space-y-4">
+              <AssetGenerator />
+            </div>
+          </div>
+          <AssetsGallery />
+        </>
+      )}
+      {tab === "generate" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <AssetGenerator />
+          <AssetsGallery />
+        </div>
+      )}
+      {tab === "gallery" && <AssetsGallery />}
+      {tab === "settings" && <SpatialSettingsPanel />}
+      {tab === "docs" && <SpatialArchitectureDocs />}
+    </>
+  );
+}
+
+function LeadsContent({ tab }: { tab: LeadsTab }) {
+  return (
+    <>
+      {tab === "overview" && (
+        <>
+          <LeadStatsGrid />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <LeadChartsGrid />
+            </div>
+            <div className="space-y-4">
+              <LeadScraperConfig />
+            </div>
+          </div>
+          <PipelineView />
+        </>
+      )}
+      {tab === "scraper" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <LeadScraperConfig />
+          <PipelineView />
+        </div>
+      )}
+      {tab === "pipeline" && <PipelineView />}
+      {tab === "outreaches" && <OutreachList />}
+      {tab === "settings" && <LeadSettingsPanel />}
+      {tab === "docs" && <LeadArchitectureDocs />}
+    </>
+  );
+}
+
+function AIOpsContent({ tab }: { tab: AiopsTab }) {
+  return (
+    <>
+      {tab === "overview" && (
+        <>
+          <AiopsStatsGrid />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <AiopsChartsGrid />
+            </div>
+            <div className="space-y-4">
+              <IncidentList />
+            </div>
+          </div>
+          <ServiceList />
+        </>
+      )}
+      {tab === "services" && <ServiceList />}
+      {tab === "incidents" && <IncidentList />}
+      {tab === "settings" && <AiopsSettingsPanel />}
+      {tab === "docs" && <AiopsArchitectureDocs />}
+    </>
+  );
+}
+
+function OmniContent({ tab }: { tab: OmniTab }) {
+  return (
+    <>
+      {tab === "overview" && (
+        <>
+          <SalesStatsGrid />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <SalesChartsGrid />
+            </div>
+            <div className="space-y-4">
+              <ConversationList />
+            </div>
+          </div>
+          <KnowledgeBaseList />
+        </>
+      )}
+      {tab === "conversations" && <ConversationList />}
+      {tab === "knowledge" && <KnowledgeBaseList />}
+      {tab === "settings" && <SalesSettingsPanel />}
+      {tab === "docs" && <SalesArchitectureDocs />}
+    </>
+  );
+}
+
 function Footer() {
   return (
     <footer className="mt-auto border-t border-border/60 bg-background/50 backdrop-blur">
@@ -491,8 +982,8 @@ function Footer() {
               <span className="text-sm font-bold cyber-text-glow">Baran Innovation Suite</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              منصة تجمع مشروعين مبتكرين بُنيا بموارد مجانية بالكامل:
-              Cyber-SentinelBaran (#14) — الفحص الأمني، و Pixel-ZeroBaran (#13) — استوديو الصور.
+              منصة تجمع ثمانية مشاريع مبتكرة بُنيت بموارد مجانية بالكامل:
+              Cyber (#14)، Pixel (#13)، SEO (#12)، Data (#11)، Spatial (#10)، Leads (#9)، AIOps (#8)، و Omni-Sales (#7).
             </p>
           </div>
 
@@ -583,11 +1074,10 @@ function Footer() {
         <div className="pt-4 border-t border-border/40 text-center text-[11px] text-muted-foreground">
           <p>
             © 2026 Baran Avisat — Baran Innovation Suite. جميع الحقوق محفوظة.
-            المؤلف: Baran Avisat | رخصة MIT | المشاريع #13 و #14 في سجل قاعدة بيانات
-            الابتكار البرمجي.
+            المؤلف: Baran Avisat | رخصة MIT | المشاريع #7 إلى #14 في سجل قاعدة بيانات الابتكار البرمجي.
           </p>
           <p className="mt-1">
-            صُمِّم وبُنِيَ بحب لحماية مطوري ومؤسسات العالم العربي والإسلامي. 🛡️ + 🎨
+            صُمِّم وبُنِيَ بحب لمطوري ومصممي ومسوّقي ومؤسسات العالم العربي والإسلامي. 🛡️ + 🎨 + 📈 + 📊 + 🎭 + 🎯 + 🤖 + 💬
           </p>
         </div>
       </div>

@@ -32,6 +32,10 @@ type CarouselContextProps = {
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null)
 
+// Snapshot returned by useSyncExternalStore on the server (no scrolling there).
+const SERVER_SCROLL_FLAGS = "00"
+const getServerScrollFlags = () => SERVER_SCROLL_FLAGS
+
 function useCarousel() {
   const context = React.useContext(CarouselContext)
 
@@ -58,14 +62,28 @@ function Carousel({
     },
     plugins
   )
-  const [canScrollPrev, setCanScrollPrev] = React.useState(false)
-  const [canScrollNext, setCanScrollNext] = React.useState(false)
 
-  const onSelect = React.useCallback((api: CarouselApi) => {
-    if (!api) return
-    setCanScrollPrev(api.canScrollPrev())
-    setCanScrollNext(api.canScrollNext())
-  }, [])
+  const subscribe = React.useCallback(
+    (onChange: () => void) => {
+      if (!api) return () => {}
+      api.on("reInit", onChange)
+      api.on("select", onChange)
+      return () => {
+        api.off("reInit", onChange)
+        api.off("select", onChange)
+      }
+    },
+    [api]
+  )
+
+  const getSnapshot = React.useCallback(() => {
+    if (!api) return "00"
+    return `${api.canScrollPrev() ? "1" : "0"}${api.canScrollNext() ? "1" : "0"}`
+  }, [api])
+
+  const scrollFlags = React.useSyncExternalStore(subscribe, getSnapshot, getServerScrollFlags)
+  const canScrollPrev = scrollFlags[0] === "1"
+  const canScrollNext = scrollFlags[1] === "1"
 
   const scrollPrev = React.useCallback(() => {
     api?.scrollPrev()
@@ -92,17 +110,6 @@ function Carousel({
     if (!api || !setApi) return
     setApi(api)
   }, [api, setApi])
-
-  React.useEffect(() => {
-    if (!api) return
-    onSelect(api)
-    api.on("reInit", onSelect)
-    api.on("select", onSelect)
-
-    return () => {
-      api?.off("select", onSelect)
-    }
-  }, [api, onSelect])
 
   return (
     <CarouselContext.Provider

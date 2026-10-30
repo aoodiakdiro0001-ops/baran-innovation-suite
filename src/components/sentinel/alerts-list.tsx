@@ -42,9 +42,22 @@ export function AlertsList() {
   };
 
   useEffect(() => {
-    load();
+    let active = true;
+    fetch("/api/alerts?limit=20")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!active) return;
+        setAlerts(d.alerts || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
     const t = setInterval(load, 30000);
-    return () => clearInterval(t);
+    return () => {
+      active = false;
+      clearInterval(t);
+    };
   }, []);
 
   const sendTest = async () => {

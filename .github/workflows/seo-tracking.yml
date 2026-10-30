@@ -1,0 +1,203 @@
+# ============================================================
+# SEO-GhostBaran | GitHub Actions Workflow
+# رصد دوري للترتيب + توليد محتوى + تقرير أسبوعي
+# ============================================================
+name: "📈 SEO-GhostBaran Tracking & Content"
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "وضع التشغيل"
+        type: choice
+        options:
+          - track_only
+          - track_and_generate
+          - weekly_report
+          - full_pipeline
+        default: full_pipeline
+      target_site:
+        description: "موقعك المستهدف (sentinelbaran.io)"
+        required: true
+        default: "sentinelbaran.io"
+      keywords_file:
+        description: "ملف الكلمات المفتاحية (في المستودع)"
+        required: false
+        default: "keywords.txt"
+
+  schedule:
+    # يومياً الساعة 6:00 UTC (9:00 بتوقيت مكة)
+    - cron: "0 6 * * *"
+    # تقرير أسبوعي كل إثنين 9:00 UTC
+    - cron: "0 9 * * 1"
+
+env:
+  SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  SEO_TELEGRAM_BOT_TOKEN: ${{ secrets.SEO_TELEGRAM_BOT_TOKEN }}
+  SEO_TELEGRAM_CHAT_ID: ${{ secrets.SEO_TELEGRAM_CHAT_ID }}
+
+jobs:
+  track-and-generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "📦 Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scanner/seo/requirements.txt
+
+      - name: "📁 Setup Workspace"
+        run: |
+          mkdir -p results content
+          echo "workspace_ready=true" >> $GITHUB_ENV
+
+      # ============================================================
+      # 1. تتبع الترتيب اليومي
+      # ============================================================
+      - name: "📈 Track Keyword Rankings"
+        if: github.event.inputs.mode != 'weekly_report' || github.event_name == 'schedule'
+        run: |
+          if [ -f "${{ github.event.inputs.keywords_file || 'keywords.txt' }}" ]; then
+            python scanner/seo/rank_tracker.py \
+              --keywords="${{ github.event.inputs.keywords_file || 'keywords.txt' }}" \
+              --target="${{ github.event.inputs.target_site || 'sentinelbaran.io' }}" \
+              --output=results/rank-snapshots.json
+          else
+            echo "⚠️ ملف الكلمات غير موجود. استخدام كلمة تجريبية."
+            python scanner/seo/rank_tracker.py \
+              --keyword="cyber security scan" \
+              --target="${{ github.event.inputs.target_site || 'sentinelbaran.io' }}" \
+              --output=results/rank-snapshots.json
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 2. توليد المحتوى (إذا mode = generate أو full)
+      # ============================================================
+      - name: "✍️ Generate SEO Content for Top Opportunity"
+        if: |
+          (github.event.inputs.mode == 'track_and_generate' ||
+           github.event.inputs.mode == 'full_pipeline') &&
+          env.GEMINI_API_KEY != ''
+        run: |
+          # ابحث عن أفضل فرصة من نتائج التتبع (مبسّط)
+          if [ -f "results/rank-snapshots.json" ]; then
+            # اختر أول كلمة لم تظهر بعد (ترتيبها = 0)
+            KEYWORD=$(python3 -c "
+            import json
+            with open('results/rank-snapshots.json') as f:
+                data = json.load(f)
+                for item in data:
+                    if item.get('target_rank', 0) == 0:
+                        print(item['keyword'])
+                        break
+            " 2>/dev/null || echo "AI content generator 2026")
+          else
+            KEYWORD="AI content generator 2026"
+          fi
+          echo "كلمة الفرصة: $KEYWORD"
+          python scanner/seo/content_generator.py \
+            --keyword="$KEYWORD" \
+            --type=article \
+            --word-count=2000 \
+            --analyze-gap \
+            --output=content/generated-article.json
+        continue-on-error: true
+
+      # ============================================================
+      # 3. التقرير الأسبوعي عبر Telegram
+      # ============================================================
+      - name: "📨 Send Weekly Report via Telegram"
+        if: |
+          (github.event.inputs.mode == 'weekly_report' || github.event.inputs.mode == 'full_pipeline') &&
+          env.SEO_TELEGRAM_BOT_TOKEN != '' &&
+          env.SEO_TELEGRAM_CHAT_ID != ''
+        run: |
+          python scanner/seo/telegram_reporter.py --weekly
+        continue-on-error: true
+
+      # ============================================================
+      # 4. تنبيه فوري عند تحسّن كبير
+      # ============================================================
+      - name: "🚨 Send Real-time Alerts"
+        if: env.SEO_TELEGRAM_BOT_TOKEN != '' && env.SEO_TELEGRAM_CHAT_ID != ''
+        run: |
+          # فحص نتائج التتبع وإرسال تنبيهات عند تحسّن/تراجع كبير
+          if [ -f "results/rank-snapshots.json" ]; then
+            python3 -c "
+          import json, os, urllib.request
+          with open('results/rank-snapshots.json') as f:
+              data = json.load(f)
+          alerts = []
+          for item in data:
+              rank = item.get('target_rank', 0)
+              if 1 <= rank <= 3:
+                  alerts.append(f\"✅ كلمة '{item['keyword']}' في الصدارة (#{rank})!\")
+          if alerts:
+              text = '🚨 تنبيهات SEO فورية:\n\n' + '\n'.join(alerts)
+              bot = os.environ.get('SEO_TELEGRAM_BOT_TOKEN', '')
+              chat = os.environ.get('SEO_TELEGRAM_CHAT_ID', '')
+              if bot and chat:
+                  url = f'https://api.telegram.org/bot{bot}/sendMessage'
+                  payload = json.dumps({'chat_id': chat, 'text': text, 'parse_mode': 'Markdown'}).encode()
+                  req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+                  urllib.request.urlopen(req, timeout=15)
+          " 2>/dev/null || true
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 5. Upload Artifacts
+      # ============================================================
+      - name: "📤 Upload Results"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seo-results-${{ github.run_id }}
+          path: |
+            results/
+            content/
+          retention-days: 90
+
+      # ============================================================
+      # 6. ملخص
+      # ============================================================
+      - name: "✅ Summary"
+        if: always()
+        run: |
+          echo "### 📈 SEO-GhostBaran — تقرير الرصد" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**الوضع:** \`${{ github.event.inputs.mode || 'scheduled' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**الموقع المستهدف:** \`${{ github.event.inputs.target_site || 'sentinelbaran.io' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "results/rank-snapshots.json" ]; then
+            echo "**نتائج التتبع:**" >> $GITHUB_STEP_SUMMARY
+            cat results/rank-snapshots.json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for item in data[:10]:
+              print(f\"  - \\\`{item['keyword']}\\\`: #{item.get('target_rank', 0)}\")
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "  (تعذّر قراءة النتائج)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f "content/generated-article.json" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**مقال مُولَّد:**" >> $GITHUB_STEP_SUMMARY
+            cat content/generated-article.json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          print(f\"  - العنوان: {data.get('title', '—')}\")
+          print(f\"  - SEO Score: {data.get('seoScore', 0)}/100\")
+          print(f\"  - زيارات متوقعة: {data.get('estimatedTraffic', 0)}/شهر\")
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi

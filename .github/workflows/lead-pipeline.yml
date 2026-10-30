@@ -1,0 +1,185 @@
+# ============================================================
+# Lead-Sniper ZeroBaran | GitHub Actions Workflow
+# صيد العملاء + AI Outreach + Telegram Notifications
+# ============================================================
+name: "🎯 Lead-Sniper ZeroBaran Pipeline"
+
+on:
+  workflow_dispatch:
+    inputs:
+      industry:
+        description: "الصناعة المستهدفة"
+        type: choice
+        options:
+          - ecommerce
+          - saas
+          - agency
+          - gaming
+          - retail
+          - fintech
+        default: ecommerce
+      location:
+        description: "الموقع الجغرافي"
+        default: "global"
+      count:
+        description: "عدد العملاء لكل دورة"
+        default: "5"
+      service:
+        description: "الخدمة المعروضة"
+        default: "تدقيق أمان + تقرير OWASP"
+      tone:
+        description: "أسلوب الرسائل"
+        type: choice
+        options:
+          - professional
+          - casual
+          - formal
+          - friendly
+        default: professional
+      send_to_telegram:
+        description: "إرسال التنبيهات لتليجرام"
+        type: boolean
+        default: true
+
+  schedule:
+    # يومياً أيام العمل 9:00 UTC (12:00 مكة)
+    - cron: "0 9 * * 1-5"
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+  GOOGLE_CSE_ID: ${{ secrets.GOOGLE_CSE_ID }}
+  LEAD_TELEGRAM_BOT_TOKEN: ${{ secrets.LEAD_TELEGRAM_BOT_TOKEN }}
+  LEAD_TELEGRAM_CHAT_ID: ${{ secrets.LEAD_TELEGRAM_CHAT_ID }}
+  LEAD_SUPABASE_URL: ${{ secrets.LEAD_SUPABASE_URL }}
+  LEAD_SUPABASE_ANON_KEY: ${{ secrets.LEAD_SUPABASE_ANON_KEY }}
+
+jobs:
+  lead-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: "📥 Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "📦 Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scanner/leads/requirements.txt
+
+      - name: "📁 Setup Workspace"
+        run: mkdir -p leads outreaches
+
+      # ============================================================
+      # 1. صيد العملاء (Lead Scraper)
+      # ============================================================
+      - name: "🎯 Run Lead Scraper"
+        run: |
+          python scanner/leads/lead_scraper.py \
+            --industry="${{ github.event.inputs.industry || 'ecommerce' }}" \
+            --location="${{ github.event.inputs.location || 'global' }}" \
+            --count="${{ github.event.inputs.count || '5' }}" \
+            --service="${{ github.event.inputs.service || 'تدقيق أمان' }}" \
+            --output=leads/scraped_leads.json
+        continue-on-error: true
+
+      # ============================================================
+      # 2. توليد رسائل AI مخصصة لكل عميل
+      # ============================================================
+      - name: "✉️ Generate AI Outreach Messages"
+        if: env.GEMINI_API_KEY != ''
+        run: |
+          if [ -f "leads/scraped_leads.json" ]; then
+            # استخراج كل عميل على حدة وتوليد رسالة له
+            python3 -c "
+          import json, sys
+          with open('leads/scraped_leads.json') as f:
+              data = json.load(f)
+          leads = data.get('leads', [])
+          print(f'Found {len(leads)} leads')
+          for i, lead in enumerate(leads):
+              with open(f'leads/lead_{i}.json', 'w', encoding='utf-8') as f:
+                  json.dump(lead, f, ensure_ascii=False, indent=2)
+          " 2>/dev/null || true
+
+            # توليد رسالة لكل عميل
+            for f in leads/lead_*.json; do
+              if [ -f \"\$f\" ]; then
+                IDX=\$(basename \"\$f\" .json | sed 's/lead_//')
+                python scanner/leads/ai_outreach.py \
+                  --lead-json=\"\$f\" \
+                  --service=\"${{ github.event.inputs.service || 'تدقيق أمان' }}\" \
+                  --tone=\"${{ github.event.inputs.tone || 'professional' }}\" \
+                  --output=\"outreaches/outreach_\$IDX.json\" 2>/dev/null || true
+                sleep 1  # respect rate limit
+              fi
+            done
+          fi
+        continue-on-error: true
+
+      # ============================================================
+      # 3. إرسال إشعارات Telegram لكل عميل + رسالته
+      # ============================================================
+      - name: "📨 Send Telegram Notifications"
+        if: github.event.inputs.send_to_telegram == 'true' && env.LEAD_TELEGRAM_BOT_TOKEN != '' && env.LEAD_TELEGRAM_CHAT_ID != ''
+        run: |
+          for f in leads/lead_*.json; do
+            if [ -f \"\$f\" ]; then
+              IDX=\$(basename \"\$f\" .json | sed 's/lead_//')
+              OUTREACH_FILE=\"outreaches/outreach_\$IDX.json\"
+              if [ -f \"\$OUTREACH_FILE\" ]; then
+                python scanner/leads/telegram_notifier.py \
+                  --lead-json=\"\$f\" \
+                  --outreach-json=\"\$OUTREACH_FILE\" 2>/dev/null || true
+                sleep 2  # respect rate limit
+              fi
+            fi
+          done
+        continue-on-error: true
+
+      # ============================================================
+      # 4. Upload Artifacts
+      # ============================================================
+      - name: "📤 Upload Results"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lead-sniper-${{ github.run_id }}
+          path: |
+            leads/
+            outreaches/
+          retention-days: 30
+
+      # ============================================================
+      # 5. ملخص
+      # ============================================================
+      - name: "✅ Summary"
+        if: always()
+        run: |
+          echo "### 🎯 Lead-Sniper ZeroBaran — تقرير الصيد" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**الصناعة:** \`${{ github.event.inputs.industry || 'ecommerce' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**الموقع:** \`${{ github.event.inputs.location || 'global' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**الأسلوب:** \`${{ github.event.inputs.tone || 'professional' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "leads/scraped_leads.json" ]; then
+            cat leads/scraped_leads.json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          leads = data.get('leads', [])
+          print(f'**عدد العملاء المُصادين:** {len(leads)}')
+          high_score = sum(1 for l in leads if l.get('score', 0) >= 80)
+          print(f'**عملاء بمتوسط عالٍ:** {high_score}')
+          print('')
+          print('**أفضل 5 عملاء:**')
+          for l in sorted(leads, key=lambda x: x.get('score', 0), reverse=True)[:5]:
+              print(f\"- \\\`{l['name']}\\\` @ {l['company']} — Score: {l['score']}\")
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi
